@@ -31,6 +31,28 @@ class NotificationService {
       await androidImplementation?.requestExactAlarmsPermission();
     }
   }
+
+  // đẩy thông báo ngay lập tức khi vượt ngưỡng định mức chi tiêu
+  Future<void> showInstantNotification({
+    required int id,
+    required String title,
+    required String body,
+  }) async {
+    await _notificationsPlugin.show(
+      id,
+      title,
+      body,
+      const NotificationDetails(
+        android: AndroidNotificationDetails(
+          'budget_alerts_channel', 'Cảnh báo định mức',
+          importance: Importance.max,
+          priority: Priority.high,
+        ),
+        iOS: DarwinNotificationDetails(),
+      ),
+    );
+  }
+
   // ham dat lich thong bao
   Future<void> scheduleNotification({
     required int id,

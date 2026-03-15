@@ -37,10 +37,12 @@ class _AuthScreenState extends State<AuthScreen> {
 
     setState(() => isLoading = false);
 
+    print(result);
+
     if (result['success']) {
       if (isLogin) {
         _showSnackBar("Đăng nhập thành công!", isError: false);
-        await Future.delayed(const Duration(milliseconds: 300));
+        await Future.delayed(const Duration(milliseconds: 800));
         if (!mounted) return;
         Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false);
       } else {

@@ -22,7 +22,8 @@ class ApiClient {
         final prefs = await SharedPreferences.getInstance();
         await prefs.reload();
 
-        final String? token = prefs.getString('token');
+        String? token = prefs.getString('token');
+
         if (token != null && token.isNotEmpty) {
           options.headers["Authorization"] = "Bearer $token";
           print("DEBUG: Đã tìm thấy Token và gắn vào Header thành công!");
