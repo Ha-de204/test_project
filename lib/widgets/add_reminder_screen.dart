@@ -3,7 +3,7 @@ import 'package:intl/intl.dart';
 import '../constants.dart';
 import '../models/reminder_model.dart';
 import '../services/apiReminder.dart';
-
+import '../utils/notification_service.dart';
 
 class AddReminderScreen extends StatefulWidget {
   final ReminderModel? reminder;
@@ -162,6 +162,19 @@ class _AddReminderScreenState extends State<AddReminderScreen> {
       }
 
       if (result['success'] == true) {
+        // lấy id lời nhắc
+        String rawId = widget.reminder?.id ?? result['reminder_id'] ?? "0";
+        int notificationId = rawId.hashCode;
+
+        // đặt lịch thông báo
+        await NotificationService().scheduleNotification(
+          id: notificationId,
+          title: _titleController.text,
+          body: _messageController.text.isEmpty ? "Đã đến giờ nhắc nhở!" : _messageController.text,
+          scheduledDate: _selectedDateTime,
+          frequency: _selectedFrequency!,
+        );
+
         if (mounted) {
           Navigator.pop(context, true);
         }

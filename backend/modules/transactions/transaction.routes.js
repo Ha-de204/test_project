@@ -1,14 +1,14 @@
 const express = require('express');
 const router = express.Router();
 const transactionController = require('./transaction.controller');
-//const { protect } = require('../../middlewares/authMiddleware');
+const { protect } = require('../../middlewares/authMiddleware');
 
-router.post('/create', transactionController.createTransaction);
-router.get('/list', transactionController.getTransactions);
+router.post('/create', protect, transactionController.createTransaction);
+router.get('/list',protect, transactionController.getTransactions);
 
 router.route('/:id')
-    .get(transactionController.getTransactionById)
-    .put(transactionController.updateTransaction)
-    .delete(transactionController.deleteTransaction);
+    .get(protect, transactionController.getTransactionById)
+    .put(protect, transactionController.updateTransaction)
+    .delete(protect, transactionController.deleteTransaction);
 
 module.exports = router;

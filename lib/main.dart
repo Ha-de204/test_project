@@ -4,8 +4,12 @@ import 'package:month_year_picker/month_year_picker.dart';
 
 import 'constants.dart';
 import 'screens/expense_tracker_screen.dart';
+import 'utils/notification_service.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  final notificationService = NotificationService();
+  await notificationService.init();
   runApp(const MyApp());
 }
 

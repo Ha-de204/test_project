@@ -13,12 +13,12 @@ const connectDB = async () => {
 
             await mongoose.connect(dbUri);
             isConnected = true;
-            console.log('✅ Kết nối MongoDB Atlas thành công!');
+            console.log('Kết nối MongoDB Atlas thành công!');
         }
         return mongoose.connection;
     } catch (err) {
         isConnected = false;
-        console.error('❌ Lỗi kết nối MongoDB:', err.message);
+        console.error('Lỗi kết nối MongoDB:', err.message);
     }
 };
 

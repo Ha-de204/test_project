@@ -16,7 +16,7 @@ const upsertBudget = async (user_id, category_id, amount, period) => {
     return result._id;
 };
 
-// 2. Lấy ngân sách và số tiền đã chi tiêu theo tháng (Đã sửa lỗi chọn tháng khác)
+// 2. Lấy ngân sách và số tiền đã chi tiêu theo tháng
 const getBudgetsAmountPeriod = async (user_id, period) => {
     const [year, month] = period.split('-').map(Number);
     const startDate = new Date(Date.UTC(year, month - 1, 1, 0, 0, 0));

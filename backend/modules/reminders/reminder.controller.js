@@ -1,8 +1,8 @@
 const reminderService = require('../../services/reminder.service');
 
 const createReminder = async (req, res) => {
-    //const user_id = req.user_id;
-    const user_id = "658123456789012345678901";
+    const user_id = req.user_id;
+    //const user_id = "658123456789012345678901";
     const { title, message, due_date, frequency} = req.body;
 
     if (!title || !due_date || !frequency) {
@@ -30,8 +30,8 @@ const createReminder = async (req, res) => {
 
 // lay tat ca loi nhac
 const getReminders = async (req, res) => {
-    //const user_id = req.user_id;
-    const user_id = "658123456789012345678901";
+    const user_id = req.user_id;
+    //const user_id = "658123456789012345678901";
 
     try {
         const reminders = await reminderService.getRemindersByUserId(user_id);
@@ -44,8 +44,8 @@ const getReminders = async (req, res) => {
 
 // lay chi tiet 1 loi nhac
 const getReminderById = async (req, res) => {
-    //const user_id = req.user_id;
-    const user_id = "658123456789012345678901";
+    const user_id = req.user_id;
+    //const user_id = "658123456789012345678901";
     const reminderId = req.params.id;
 
     if (!reminderId || reminderId.length !== 24) {
@@ -68,8 +68,8 @@ const getReminderById = async (req, res) => {
 
 //update loi nhac
 const updateReminder = async (req, res) => {
-    //const user_id = req.user_id;
-    const user_id = "658123456789012345678901";
+    const user_id = req.user_id;
+    //const user_id = "658123456789012345678901";
     const reminderId = req.params.id;
     const { title, message, due_date, frequency, is_enabled } = req.body;
 
@@ -101,8 +101,8 @@ const updateReminder = async (req, res) => {
 
 // delete loi nhac
 const deleteReminder = async (req, res) => {
-    //const user_id = req.user_id;
-    const user_id = "658123456789012345678901";
+    const user_id = req.user_id;
+    //const user_id = "658123456789012345678901";
     const reminderId = req.params.id;
 
     if (!reminderId || reminderId.length !== 24) {

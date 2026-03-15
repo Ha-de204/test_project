@@ -4,6 +4,7 @@ import '../widgets/add_reminder_screen.dart';
 import '../constants.dart';
 import '../models/reminder_model.dart';
 import '../services/apiReminder.dart';
+import '../utils/notification_service.dart';
 
 class ReminderListScreen extends StatefulWidget {
   const ReminderListScreen({super.key});
@@ -67,6 +68,7 @@ class _ReminderListScreenState extends State<ReminderListScreen> {
           const SnackBar(content: Text('Đã xóa lời nhắc')),
         );
       }
+      await NotificationService().cancelNotification(id.hashCode);
       _fetchReminders();
     } else {
       _fetchReminders();

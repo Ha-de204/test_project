@@ -37,8 +37,8 @@ const getSummary = async (req, res) => {
 };
 
 const getCategoryBreakdown = async (req, res) => {
-    //const user_id = req.user_id;
-    const user_id = "658123456789012345678901";
+    const user_id = req.user_id;
+    //const user_id = "658123456789012345678901";
     const { startDate, endDate } = normalizeDateParams(req);
 
     try {
@@ -52,8 +52,8 @@ const getCategoryBreakdown = async (req, res) => {
 };
 
 const getMonthlyFlow = async (req, res) => {
-    //const user_id = req.user_id;
-    const user_id = "658123456789012345678901";
+    const user_id = req.user_id;
+    //const user_id = "658123456789012345678901";
     const year = parseInt(req.query.year) || new Date().getFullYear();
 
     try {

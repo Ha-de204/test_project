@@ -1,8 +1,8 @@
 const categoryService = require('../../services/category.service');
 
 const getCategories = async (req, res) => {
-    //const user_id = req.user_id;
-    const user_id = "658123456789012345678901";
+    const user_id = req.user_id;
+    //const user_id = "658123456789012345678901";
 
     try {
         const categories = await categoryService.getCategoriesByUser(user_id);
@@ -14,8 +14,8 @@ const getCategories = async (req, res) => {
 };
 
 const createCategory = async (req, res) => {
-    //const user_id = req.user_id;
-    const user_id = "658123456789012345678901";
+    const user_id = req.user_id;
+    //const user_id = "658123456789012345678901";
     const { name, iconCodePoint } = req.body;
 
     console.log('ID người dùng nhận được trong Controller:', user_id);
@@ -45,8 +45,8 @@ const createCategory = async (req, res) => {
 
 // update danh muc
 const updateCategory = async (req, res) => {
-    //const user_id = req.user_id;
-    const user_id = "658123456789012345678901";
+    const user_id = req.user_id;
+    //const user_id = "658123456789012345678901";
     const categoryId = req.params.id;
     const { name, iconCodePoint } = req.body;
 
@@ -75,8 +75,8 @@ const updateCategory = async (req, res) => {
 
 // delete danh muc
 const deleteCategory = async (req, res) => {
-    //const user_id = req.user_id;
-    const user_id = "658123456789012345678901";
+    const user_id = req.user_id;
+    //const user_id = "658123456789012345678901";
     const categoryId = req.params.id;
 
     if (!categoryId || categoryId.length !== 24) {

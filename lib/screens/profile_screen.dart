@@ -4,34 +4,86 @@ import 'term_of_use_screen.dart';
 import 'privacy_policy_screen.dart';
 import '../constants.dart';
 import 'package:flutter/services.dart';
+import 'auth_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 const String _APP_LINK = 'https://applink.mockapp/SoCaiThuChi';
 
 class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({super.key});
+  final String? userName;
+  const ProfileScreen({super.key, this.userName});
+
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
   bool _isLoggedIn = false;
-  String _useName = 'Khách';
-  String _useEmail = 'Đăng nhập, thú vị hơn!';
+  String _userName = 'Khách';
+  String _statusMessage = 'Đăng nhập để lưu dữ liệu';
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.userName != null) {
+      setState(() {
+        _isLoggedIn = true;
+        _userName = widget.userName!;
+        _statusMessage = 'Đang hoạt động';
+      });
+    } else {
+      _loadUserData();
+    }
+  }
+
+  // load data user
+  Future<void> _loadUserData() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.reload();
+
+    final String? userName = prefs.getString('userName');
+    final String? token = prefs.getString('token');
+
+    if (token != null && userName != null) {
+      setState(() {
+        _isLoggedIn = true;
+        _userName = userName;
+        _statusMessage = 'Đang hoạt động';
+      });
+    } else {
+      setState(() {
+        _isLoggedIn = false;
+        _userName = 'Khách';
+        _statusMessage = 'Đăng nhập để trải nghiệm thú vị hơn!';
+      });
+    }
+  }
 
   // đăng nhập / đăng xuất
   Future<void> _handleLoginLogout() async {
     if(_isLoggedIn) {
-      setState(() {
-        _isLoggedIn = false;
-        _useName = 'Khách';
-        _useEmail = 'Đăng nhập, thú vị hơn!';
-      });
+      bool? confirm = await showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+          title: const Text('Đăng xuất?'),
+          content: const Text('Bạn có chắc chắn muốn đăng xuất tài khoản này?'),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Hủy')),
+            TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Đồng ý')),
+          ],
+        ),
+      );
+      if (confirm == true) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.clear();
+        _loadUserData();
+        Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false);
+      }
     } else {
-      setState(() {
-        _isLoggedIn = true;
-        _useName = 'Hà Nguyễn';
-        _useEmail = 'Chào mừng trở lại!';
-      });
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const AuthScreen()),
+      ).then((_) => _loadUserData());
     }
   }
 
@@ -94,7 +146,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
       );
   }
-
   // xóa tất cả dl
   void _confirmDataDeletion() {
     showDialog(
@@ -170,29 +221,31 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 border: Border.all(color: kPrimaryPink.withOpacity(0.5), width: 1.0),
               ),
               child: Icon(
-                _isLoggedIn ? Icons.person : Icons.person_add_alt,
+                _isLoggedIn ? Icons.person : Icons.login,
                 size: 40,
                 color: kPrimaryPink,
               ),
             ),
-            const SizedBox(width: 10),
+            const SizedBox(width: 12),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  _isLoggedIn ? _useName : 'Đăng nhập',
+                  _isLoggedIn ? _userName : 'Đăng nhập',
                   style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                     color: Colors.black,
                   ),
                 ),
+                const SizedBox(height: 2),
                 Text(
-                  _useEmail,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey,
+                  _statusMessage,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: _isLoggedIn ? Colors.green : Colors.grey,
+                    fontWeight: _isLoggedIn ? FontWeight.w500 : FontWeight.normal,
                   ),
                 ),
               ],
