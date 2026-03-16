@@ -9,6 +9,7 @@ class AddTransactionContent extends StatefulWidget {
   final List<Map<String, dynamic>> categories;
   final dynamic transaction;
   final bool isEditing;
+
   const AddTransactionContent({
     super.key,
     this.transaction,
@@ -26,6 +27,7 @@ class _AddTransactionContentState extends State<AddTransactionContent> {
   String _displayValue = '0';
   DateTime _selectedDate = DateTime.now();
   bool _isSaving = false;
+  String _selectedType = 'expense';
 
   final TextEditingController _noteController = TextEditingController();
   final Map<int, GlobalKey> _categoryKeys = {};
@@ -35,6 +37,16 @@ class _AddTransactionContentState extends State<AddTransactionContent> {
     final month = _selectedDate.month;
     final year = _selectedDate.year;
     return '$day thg $month, $year';
+  }
+
+  // Hàm lọc danh mục theo Thu nhập hoặc Chi tiêu
+  List<Map<String, dynamic>> get _filteredCategories {
+    return widget.categories.where((cat) {
+      if (cat['isSetting'] == true) return true;
+
+      final type = (cat['type'] ?? 'expense').toString();
+      return type == _selectedType;
+    }).toList();
   }
 
   @override
@@ -59,13 +71,13 @@ class _AddTransactionContentState extends State<AddTransactionContent> {
       final txCatId = (tx['category_id'] ?? tx['categoryId'])?.toString();
 
       int foundIndex = widget.categories.indexWhere((cat) {
-        final catId = (cat['id'] ?? cat['_id'])?.toString();
+        final catId =(cat['id'] ?? cat['_id'])?.toString();
         return catId != null && catId == txCatId;
       });
 
       if (foundIndex == -1) {
         foundIndex = widget.categories.indexWhere(
-                (cat) => cat['label'].toString().toLowerCase() == tx['category_name'].toString().toLowerCase()
+                (cat) =>  cat['label'].toString().toLowerCase() == tx['category_name'].toString().toLowerCase()
         );
       }
 
@@ -102,7 +114,7 @@ class _AddTransactionContentState extends State<AddTransactionContent> {
     }
 
     final double amount = double.tryParse(_displayValue) ?? 0.0;
-    final selectedCategory = widget.categories[_selectedIndex];
+    final selectedCategory = _filteredCategories[_selectedIndex];
     print("DEBUG: Category đang chọn là: $selectedCategory");
 
     final String categoryId = (selectedCategory['_id'] ?? selectedCategory['id'] ?? "").toString();
@@ -123,7 +135,7 @@ class _AddTransactionContentState extends State<AddTransactionContent> {
           widget.transaction['_id'].toString(),
           categoryId: categoryId,
           amount: amount,
-          type: "expense",
+          type: _selectedType,
           date: _selectedDate.toIso8601String(),
           title: selectedCategory['label'].toString(),
           note: _noteController.text,
@@ -133,7 +145,7 @@ class _AddTransactionContentState extends State<AddTransactionContent> {
         response = await _transactionService.createTransaction(
           categoryId: categoryId,
           amount: amount,
-          type: "expense",
+          type: _selectedType,
           date: _selectedDate.toIso8601String(),
           title: selectedCategory['label'].toString(),
           note: _noteController.text,
@@ -301,7 +313,7 @@ class _AddTransactionContentState extends State<AddTransactionContent> {
 
     return InkWell(
       onTap: (){
-        _handleCategoryTap(widget.categories[index], index);
+        _handleCategoryTap(_filteredCategories[index], index);
       },
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -486,6 +498,52 @@ class _AddTransactionContentState extends State<AddTransactionContent> {
     );
   }
 
+  Widget _buildTypeSelector() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      child: Row(
+        children: [
+          Expanded(
+            child: _buildTypeButton("expense", "Chi tiêu"),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: _buildTypeButton("income", "Thu nhập"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTypeButton(String type, String label) {
+    final bool isSelected = _selectedType == type;
+
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _selectedType = type;
+          _selectedIndex = -1;
+        });
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: isSelected ? kPrimaryPink : Colors.grey[200],
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: isSelected ? Colors.white : Colors.black,
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context){
     final bool showInputSection = _selectedIndex != -1;
@@ -511,6 +569,8 @@ class _AddTransactionContentState extends State<AddTransactionContent> {
         ),
         const Divider(height: 1),
 
+        _buildTypeSelector(),
+
         // Body cuộn
         Expanded(
           child: GridView.builder(
@@ -522,12 +582,14 @@ class _AddTransactionContentState extends State<AddTransactionContent> {
               mainAxisSpacing: 10,
               childAspectRatio: 0.8,
             ),
-            itemCount: widget.categories.length,
+            itemCount: _filteredCategories.length,
             itemBuilder: (context, index) {
+              final categories = _filteredCategories;
               if (!_categoryKeys.containsKey(index)) {
                 _categoryKeys[index] = GlobalKey();
               }
-              final category = widget.categories[index];
+              final category = categories[index];
+
               return KeyedSubtree(
                 key: _categoryKeys[index],
                 child: _buildCategoryItem(

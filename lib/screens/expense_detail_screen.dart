@@ -28,7 +28,7 @@ class _ExpenseDetailScreenState extends State<ExpenseDetailScreen>{
     return formatter.format(amount);
   }
 
-  // tính tổng chi tiêu / số dư
+  // tính tổng chi tiêu / số dư / thu nhập
   double get _totalExpense{
     final dataForYear = widget.monthlyData.where((data) => data.year == _selectedYear.year).toList();
     return dataForYear.fold(0.0, (sum, item) => sum + item.expense);
@@ -36,6 +36,11 @@ class _ExpenseDetailScreenState extends State<ExpenseDetailScreen>{
   double get _totalBalance{
     final dataForYear = widget.monthlyData.where((data) => data.year == _selectedYear.year).toList();
     return dataForYear.fold(0.0, (sum, item) => sum + item.balance);
+  }
+
+  double get _totalIncome{
+    final dataForYear = widget.monthlyData.where((data) => data.year == _selectedYear.year).toList();
+    return dataForYear.fold(0.0, (sum, item) => sum + item.income);
   }
 
   // select year
@@ -101,7 +106,22 @@ class _ExpenseDetailScreenState extends State<ExpenseDetailScreen>{
                     alignment: Alignment.centerRight,
                     child: Text(
                       _formatAmount(data.expense),
-                      style: const TextStyle(fontSize: 16, color: Colors.red),
+                      style: const TextStyle(fontSize: 14, color: Colors.red),
+                    ),
+                  ),
+                ),
+              ),
+
+              Expanded(
+                flex: 3,
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerRight,
+                    child: Text(
+                      _formatAmount(data.income),
+                      style: const TextStyle(fontSize: 14, color: Colors.blue),
                     ),
                   ),
                 ),
@@ -117,7 +137,7 @@ class _ExpenseDetailScreenState extends State<ExpenseDetailScreen>{
                     alignment: Alignment.centerRight,
                     child: Text(
                       _formatAmount(data.balance),
-                      style: const TextStyle(fontSize: 16, color: Colors.green),
+                      style: const TextStyle(fontSize: 14, color: Colors.green),
                     ),
                   ),
                 ),
@@ -137,7 +157,7 @@ class _ExpenseDetailScreenState extends State<ExpenseDetailScreen>{
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        title: const Text('Chi tiêu', style: TextStyle(fontSize: 22, color: Colors.black, fontWeight: FontWeight.bold)),
+        title: const Text('Tổng quan', style: TextStyle(fontSize: 22, color: Colors.black, fontWeight: FontWeight.bold)),
         centerTitle: true,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
@@ -171,14 +191,14 @@ class _ExpenseDetailScreenState extends State<ExpenseDetailScreen>{
                   children: [
                     Column(
                       children: [
-                        const Text('Tổng chi tiêu', style: TextStyle(fontSize: 18,  fontWeight: FontWeight.bold, color: Colors.black)),
+                        const Text('Tổng chi tiêu', style: TextStyle(fontSize: 16,  fontWeight: FontWeight.bold, color: Colors.black)),
                         SizedBox(
                           height: 25,
                           child: FittedBox(
                             fit: BoxFit.scaleDown,
                             child: Text(
                               _formatAmount(_totalExpense),
-                              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.red),
+                              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.red),
                             ),
                           ),
                         ),
@@ -187,14 +207,30 @@ class _ExpenseDetailScreenState extends State<ExpenseDetailScreen>{
 
                     Column(
                       children: [
-                        const Text('Tổng số dư', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold,color: Colors.black)),
+                        const Text('Tổng thu nhập', style: TextStyle(fontSize: 16,  fontWeight: FontWeight.bold, color: Colors.black)),
+                        SizedBox(
+                          height: 25,
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              _formatAmount(_totalIncome),
+                              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.blue),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    Column(
+                      children: [
+                        const Text('Tổng số dư', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold,color: Colors.black)),
                         SizedBox(
                           height: 25,
                           child: FittedBox(
                             fit: BoxFit.scaleDown,
                             child: Text(
                               _formatAmount(_totalBalance),
-                              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.green),
+                              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.green),
                             ),
                           ),
                         ),
@@ -206,9 +242,10 @@ class _ExpenseDetailScreenState extends State<ExpenseDetailScreen>{
 
                 const Row(
                   children: [
-                    Expanded(flex: 2, child: Text('Tháng', style: TextStyle(fontSize: 18,  fontWeight: FontWeight.bold))),
-                    Expanded(flex: 3, child: Align(alignment: Alignment.centerRight, child: Text('Chi tiêu', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)))),
-                    Expanded(flex: 3, child: Align(alignment: Alignment.centerRight, child: Text('Số dư', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)))),
+                    Expanded(flex: 2, child: Text('Tháng', style: TextStyle(fontSize: 16,  fontWeight: FontWeight.bold))),
+                    Expanded(flex: 3, child: Align(alignment: Alignment.centerRight, child: Text('Chi tiêu', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)))),
+                    Expanded(flex: 3, child: Align(alignment: Alignment.centerRight, child: Text('Thu nhập', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)))),
+                    Expanded(flex: 3, child: Align(alignment: Alignment.centerRight, child: Text('Số dư', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)))),
                   ],
                 ),
                 const Divider(thickness: 2),

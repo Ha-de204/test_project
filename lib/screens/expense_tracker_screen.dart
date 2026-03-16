@@ -19,6 +19,7 @@ import 'profile_screen.dart';
 import '../widgets/add_transaction_content.dart';
 
 class ExpenseTrackerScreen extends StatefulWidget {
+
   const ExpenseTrackerScreen({super.key});
 
   @override
@@ -37,24 +38,28 @@ class _ExpenseTrackerScreenState extends State<ExpenseTrackerScreen> {
   bool _isLoading = true;
   String? _filterCategoryId;
   DateTime? _filterDate;
+  String _selectedType = 'expense';
 
   List<CategoryModel> _apiCategories = [];
   List<dynamic> _apiTransactions = [];
   Map<String, double> _budgetsMap = {};
 
   final List<Map<String, dynamic>> categories = [
-    {'id': '658123456789012345678001', 'label': 'Mua sắm', 'icon': Icons.shopping_cart_outlined.codePoint},
-    {'id': '658123456789012345678002', 'label': 'Đồ ăn', 'icon': Icons.fastfood_outlined.codePoint},
-    {'id': '658123456789012345678003', 'label': 'Quần áo', 'icon': Icons.checkroom_outlined.codePoint},
-    {'id': '658123456789012345678004', 'label': 'Nhà ở', 'icon': Icons.home_outlined.codePoint},
-    {'id': '658123456789012345678005', 'label': 'Sức khỏe', 'icon': Icons.favorite_border.codePoint},
-    {'id': '658123456789012345678006', 'label': 'Học tập', 'icon': Icons.book_outlined.codePoint},
-    {'id': '658123456789012345678007', 'label': 'Du lịch', 'icon': Icons.flight_outlined.codePoint},
-    {'id': '658123456789012345678008', 'label': 'Giải trí', 'icon': Icons.videogame_asset_outlined.codePoint},
-    {'id': '658123456789012345678009', 'label': 'Sửa chữa', 'icon': Icons.build_outlined.codePoint},
-    {'id': '658123456789012345678010', 'label': 'Sắc đẹp', 'icon': Icons.spa_outlined.codePoint},
-    {'id': '658123456789012345678011', 'label': 'Điện thoại', 'icon': Icons.phone_android_outlined.codePoint},
-    {'label': 'Cài đặt', 'icon': Icons.settings_outlined.codePoint, 'isSetting': true},
+    {'id': '658123456789012345678001', 'label': 'Mua sắm', 'icon': Icons.shopping_cart_outlined.codePoint, 'type': 'expense'},
+    {'id': '658123456789012345678002', 'label': 'Đồ ăn', 'icon': Icons.fastfood_outlined.codePoint, 'type': 'expense'},
+    {'id': '658123456789012345678003', 'label': 'Quần áo', 'icon': Icons.checkroom_outlined.codePoint, 'type': 'expense'},
+    {'id': '658123456789012345678004', 'label': 'Nhà ở', 'icon': Icons.home_outlined.codePoint, 'type': 'expense'},
+    {'id': '658123456789012345678005', 'label': 'Sức khỏe', 'icon': Icons.favorite_border.codePoint, 'type': 'expense'},
+    {'id': '658123456789012345678006', 'label': 'Học tập', 'icon': Icons.book_outlined.codePoint, 'type': 'expense'},
+    {'id': '658123456789012345678007', 'label': 'Du lịch', 'icon': Icons.flight_outlined.codePoint, 'type': 'expense'},
+    {'id': '658123456789012345678008', 'label': 'Giải trí', 'icon': Icons.videogame_asset_outlined.codePoint, 'type': 'expense'},
+    {'id': '658123456789012345678009', 'label': 'Sửa chữa', 'icon': Icons.build_outlined.codePoint, 'type': 'expense'},
+    {'id': '658123456789012345678010', 'label': 'Sắc đẹp', 'icon': Icons.spa_outlined.codePoint, 'type': 'expense'},
+    {'id': '658123456789012345678011', 'label': 'Điện thoại', 'icon': Icons.phone_android_outlined.codePoint, 'type': 'expense'},
+    {'label': 'Cài đặt', 'icon': Icons.settings_outlined.codePoint, 'isSetting': true, 'type': 'expense'},
+    {'label': 'Lương', 'icon': Icons.payments_outlined.codePoint, 'type': 'income'},
+    {'label': 'Làm thêm', 'icon': Icons.work_outline.codePoint, 'type': 'income'},
+    {'label': 'Tiền thưởng', 'icon': Icons.card_giftcard.codePoint, 'type': 'income'},
   ];
 
   @override
@@ -160,6 +165,7 @@ class _ExpenseTrackerScreenState extends State<ExpenseTrackerScreen> {
         await _categoryService.createCategory(
           label,
           cat['icon'] is int ? cat['icon'] : (cat['icon'] as IconData).codePoint,
+          cat['type'] ?? 'expense'
         );
       } catch (e) {
         debugPrint("Lỗi khi đẩy danh mục ${cat['label']}: $e");
@@ -200,7 +206,7 @@ class _ExpenseTrackerScreenState extends State<ExpenseTrackerScreen> {
       if (_filterCategoryId != null) {
         final selectedCat = _apiCategories.firstWhere(
               (c) => c.id == _filterCategoryId,
-          orElse: () => CategoryModel(id: '', name: '', iconCodePoint: 0),
+          orElse: () => CategoryModel(id: '', name: '', iconCodePoint: 0, type: ''),
         );
 
         String txCatId = _cleanId(tx['category_id']);
@@ -241,12 +247,28 @@ class _ExpenseTrackerScreenState extends State<ExpenseTrackerScreen> {
 
     return grouped.entries.map((entry) {
       final parts = entry.key.split('-');
-      double totalExp = entry.value.fold(0.0, (sum, tx) => sum + (tx['amount'] as num).toDouble());
+      double totalExpense = 0;
+      double totalIncome = 0;
+
+      for (var tx in entry.value) {
+        final amount = (tx['amount'] as num).toDouble();
+        final type = (tx['type'] ?? 'expense').toString();
+
+        if (type == 'income') {
+          totalIncome += amount;
+        } else {
+          totalExpense += amount;
+        }
+      }
+
+      final balance = totalIncome - totalExpense;
+
       return MonthlyExpenseData(
         month: int.parse(parts[1]),
         year: int.parse(parts[0]),
-        expense: totalExp,
-        balance: _currentMonthBudget - totalExp,
+        expense: totalExpense,
+        income: totalIncome,
+        balance: balance,
       );
     }).toList()..sort((a, b) => (b.year * 12 + b.month).compareTo(a.year * 12 + a.month));
   }
@@ -352,6 +374,7 @@ class _ExpenseTrackerScreenState extends State<ExpenseTrackerScreen> {
         _filterDate = null;
         _filterCategoryId = null;
       });
+      await _fetchData();
     }
   }
 
@@ -397,6 +420,12 @@ class _ExpenseTrackerScreenState extends State<ExpenseTrackerScreen> {
     }
   }
 
+  bool _isSameMonth(dynamic tx) {
+    final date = DateTime.parse(tx['date']);
+    return date.year == _selectedMonthYear.year &&
+        date.month == _selectedMonthYear.month;
+  }
+
   // hàm để thêm danh mục mới vào list categories và budget list
   void _addNewCategory(Map<String, dynamic> newCategoryData) async {
     setState(() => _isLoading = true);
@@ -405,6 +434,7 @@ class _ExpenseTrackerScreenState extends State<ExpenseTrackerScreen> {
       final response = await _categoryService.createCategory(
         newCategoryData['label'],
         (newCategoryData['icon'] as IconData).codePoint,
+          newCategoryData['type']
       );
 
       if (response != null) {
@@ -431,6 +461,7 @@ class _ExpenseTrackerScreenState extends State<ExpenseTrackerScreen> {
       'id': c.id,
       'label': c.name,
       'icon': c.iconCodePoint,
+      'type': c.type,
       'isSetting': false,
     }).toList();
 
@@ -569,7 +600,8 @@ class _ExpenseTrackerScreenState extends State<ExpenseTrackerScreen> {
         orElse: () => CategoryModel(
             id: '',
             name: txTitle.isNotEmpty ? txTitle : 'Khác',
-            iconCodePoint: 58248
+            iconCodePoint: 58248,
+            type: ''
         ),
       ),
     );
@@ -583,6 +615,8 @@ class _ExpenseTrackerScreenState extends State<ExpenseTrackerScreen> {
     final String displayNote = (tx['note'] != null && tx['note'].toString().isNotEmpty)
         ? tx['note']
         : category.name;
+
+    final bool isIncome = tx['type'] == 'income';
 
     final formatter = NumberFormat.currency(
       locale: 'vi_VN',
@@ -603,7 +637,10 @@ class _ExpenseTrackerScreenState extends State<ExpenseTrackerScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(formattedDateLine, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
-              Text('Chi tiêu: $formattedAmount', style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+              Text(
+                isIncome ? 'Thu nhập: $formattedAmount' : 'Chi tiêu: $formattedAmount',
+                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+              )
             ],
           ),
         ),
@@ -625,9 +662,13 @@ class _ExpenseTrackerScreenState extends State<ExpenseTrackerScreen> {
             ),
             title: Text(displayNote, style: const TextStyle(fontSize: 16)),
             trailing: Text(
-              '-$formattedAmount',
-              style: const TextStyle(fontSize: 16, color: Colors.red, fontWeight: FontWeight.bold,),
-            ),
+              '${isIncome ? '+' : '-'}$formattedAmount',
+              style: TextStyle(
+                fontSize: 16,
+                color: isIncome ? Colors.green : Colors.red,
+                fontWeight: FontWeight.bold,
+              ),
+            )
           ),
         ),
         const Divider(height: 1, indent: 16, endIndent: 16),
@@ -704,12 +745,22 @@ class _ExpenseTrackerScreenState extends State<ExpenseTrackerScreen> {
     final transactionsToDisplay = _filteredTransactions;
 
     final double budget = _currentMonthBudget;
-    final double expenseValue = _totalMonthlyExpense;
-    final double balanceValue = budget - expenseValue;
+    final double incomeValue = _apiTransactions
+        .where((tx) =>
+    (tx['type'] ?? 'expense') == 'income' &&
+        _isSameMonth(tx))
+        .fold(0.0, (sum, tx) => sum + (tx['amount'] ?? 0));
+
+    final double expenseValue = _apiTransactions
+        .where((tx) =>
+    (tx['type'] ?? 'expense') == 'expense' &&
+        _isSameMonth(tx))
+        .fold(0.0, (sum, tx) => sum + (tx['amount'] ?? 0));
 
     final formatter = NumberFormat.currency(locale: 'vi_VN', symbol: '', decimalDigits: 0);
     final formattedBudget = formatter.format(budget);
-    final formattedBalance = formatter.format(balanceValue);
+    final formattedIncome = formatter.format(incomeValue);
+    final formattedExpense = formatter.format(expenseValue);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -753,9 +804,9 @@ class _ExpenseTrackerScreenState extends State<ExpenseTrackerScreen> {
                     children: <Widget>[
                       _buildStatColumn('Chi tiêu', formatter.format(expenseValue), context),
                       const SizedBox(width: 18),
-                      _buildStatColumn('Ngân sách', formattedBudget, context),
+                      _buildStatColumn('Thu nhập', formattedIncome, context),
                       const SizedBox(width: 18),
-                      _buildStatColumn('Số dư', formattedBalance, context),
+                      _buildStatColumn('Ngân sách', formattedBudget, context),
                     ],
                   ),
                 ],
@@ -800,7 +851,7 @@ class _ExpenseTrackerScreenState extends State<ExpenseTrackerScreen> {
     print("DEBUG: Số lượng giao dịch sau khi lọc: ${_filteredTransactions.length}");
 
     Widget currentBody;
-    PreferredSizeWidget currentAppBar;
+    PreferredSizeWidget? currentAppBar;
 
     if (_selectedIndex == 0) {
       currentBody = _buildHomeBody(context);
@@ -835,18 +886,8 @@ class _ExpenseTrackerScreenState extends State<ExpenseTrackerScreen> {
         ],
       );
     } else if (_selectedIndex == 1) {
-      currentBody = const ChartsScreen();
-      currentAppBar = AppBar(
-        elevation: 0,
-        backgroundColor: Colors.white,
-        title: const Text('Chi tiêu', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
-        centerTitle: true,
-        leading: IconButton(icon: const Icon(Icons.menu, color: Colors.black), onPressed: () {}),
-        actions: <Widget>[
-          IconButton(icon: const Icon(Icons.search, color: Colors.black), onPressed: () {}),
-          IconButton(icon: const Icon(Icons.calendar_month, color: Colors.black), onPressed: () => _selectSpecificDate(context)),
-        ],
-      );
+      currentBody =  const ChartsScreen();
+      currentAppBar = null;
     } else if (_selectedIndex == 2) {
       currentBody = ReportsScreen(
         transactions: _apiTransactions,

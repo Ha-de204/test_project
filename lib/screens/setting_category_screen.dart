@@ -68,6 +68,7 @@ class _SettingCategoryScreenState extends State<SettingCategoryScreen> {
   final CategoryService _categoryService = CategoryService();
   final TextEditingController _nameController = TextEditingController();
   IconData? _selectedIcon;
+  String _selectedType = "expense";
 
   @override
   void initState() {
@@ -94,6 +95,7 @@ class _SettingCategoryScreenState extends State<SettingCategoryScreen> {
       await _categoryService.createCategory(
         categoryName,
         _selectedIcon!.codePoint,
+        _selectedType,
       );
 
       if (mounted) {
@@ -134,6 +136,50 @@ class _SettingCategoryScreenState extends State<SettingCategoryScreen> {
     );
   }
 
+  Widget _buildTypeSelector() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      child: Row(
+        children: [
+          Expanded(
+            child: _buildTypeButton("expense", "Chi tiêu"),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: _buildTypeButton("income", "Thu nhập"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTypeButton(String type, String label) {
+    final bool isSelected = _selectedType == type;
+
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _selectedType = type;
+        });
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: isSelected ? kPrimaryPink : Colors.grey[800],
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: isSelected ? Colors.white : Colors.grey[400],
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context){
     IconData displayIcon = _selectedIcon ?? iconGroups.values.first.first;
@@ -158,6 +204,11 @@ class _SettingCategoryScreenState extends State<SettingCategoryScreen> {
 
       body: Column(
         children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 10),
+            child: _buildTypeSelector(),
+          ),
+
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: Row(

@@ -9,6 +9,7 @@ const Color _chartGreenSecondary = Color(0xFFC8E6C9);
 const Color _toggleUnselectedColor = Color(0xFFF7E6EB);
 
 class ChartsScreen extends StatefulWidget {
+
   const ChartsScreen({super.key});
 
   @override
@@ -22,6 +23,7 @@ class _ChartsScreenState extends State<ChartsScreen> {
   late ScrollController _scrollController;
   final GlobalKey _periodSelectorKey = GlobalKey();
   bool _isLoading = true;
+  String selectedType = 'expense';
 
   final List<Color> _categoryColors = [
     _chartGreenPrimary,
@@ -83,13 +85,15 @@ class _ChartsScreenState extends State<ChartsScreen> {
     return DataAggregator.aggregateCategoryExpenses(
       _currentViewingDate,
       _selectedFilterIndex,
+      selectedType
     );
   }
 
   double get _totalExpenseForPeriod {
-    return DataAggregator.getTotalExpense(
+    return DataAggregator.getTotalAmount(
       _currentViewingDate,
       _selectedFilterIndex,
+      selectedType,
     );
   }
 
@@ -194,6 +198,37 @@ class _ChartsScreenState extends State<ChartsScreen> {
       );
     }
   }
+
+  /* Dropdown tiêu đề */
+  Widget _buildTypeDropdown() {
+    return DropdownButtonHideUnderline(
+      child: DropdownButton<String>(
+        value: selectedType,
+        dropdownColor: Colors.white,
+        style: const TextStyle(
+          color: Colors.black,
+          fontSize: 20,
+          fontWeight: FontWeight.bold,
+        ),
+        items: const [
+          DropdownMenuItem(
+            value: 'expense',
+            child: Text('Chi tiêu'),
+          ),
+          DropdownMenuItem(
+            value: 'income',
+            child: Text('Thu nhập'),
+          ),
+        ],
+        onChanged: (value) {
+          setState(() {
+            selectedType = value!;
+          });
+        },
+      ),
+    );
+  }
+
 
   Widget _buildFilterToggle() {
     final List<String> filters = ['Tuần', 'Tháng', 'Năm'];
@@ -348,10 +383,10 @@ class _ChartsScreenState extends State<ChartsScreen> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        'Không có chi tiêu trong chu kỳ này.',
-                        style: TextStyle(color: Colors.grey.shade500),
-                        textAlign: TextAlign.center,
-                      ),
+                        selectedType == 'expense'
+                            ? 'Không có chi tiêu trong chu kỳ này.'
+                            : 'Không có thu nhập trong chu kỳ này.',
+                      )
                     ],
                   ),
                 ),
@@ -601,6 +636,7 @@ class _ChartsScreenState extends State<ChartsScreen> {
 
   @override
   Widget build(BuildContext context) {
+
     if (_isLoading) {
       return const Scaffold(
         body: Center(child: CircularProgressIndicator(color: kPrimaryPink)),
@@ -612,14 +648,34 @@ class _ChartsScreenState extends State<ChartsScreen> {
 
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        centerTitle: true,
+        title: _buildTypeDropdown(),
+        leading: IconButton(
+          icon: const Icon(Icons.menu, color: Colors.black),
+          onPressed: () {},
+        ),
+        actions: [
+          IconButton(icon: const Icon(Icons.search, color: Colors.black), onPressed: () {}),
+          IconButton(
+            icon: const Icon(Icons.calendar_month, color: Colors.black),
+            onPressed: () {},
+          ),
+        ],
+      ),
+
       body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const SizedBox(height: 10),
             _buildFilterToggle(),
+
             const SizedBox(height: 20),
             _buildPeriodSelector(),
+
             const SizedBox(height: 30),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 15.0),

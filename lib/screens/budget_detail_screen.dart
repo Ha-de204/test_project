@@ -419,17 +419,22 @@ class _BudgetDetailScreenState extends State<BudgetDetailScreen> {
     double progress = displayBudget > 0 ? expense / displayBudget : 0.0;
 
     Color progressColor;
+
     if (expense > displayBudget) {
-      progressColor = Colors.red;
+      progressColor = Colors.red.shade700;
     }
     else if (displayBudget == 0.0 && expense == 0.0) {
-      progressColor = Colors.lightGreen.shade200;
+      progressColor = Colors.green.shade400;
     }
     else {
-      if (progress <= 0.8) {
-        progressColor = Colors.lightGreen;
-      } else {
-        progressColor = Colors.green.shade200;
+      if (progress <= 0.6) {
+        progressColor = Colors.green.shade700;
+      }
+      else if (progress <= 0.9) {
+        progressColor = Colors.orange.shade600;
+      }
+      else {
+        progressColor = Colors.deepOrange.shade600;
       }
     }
 
@@ -531,7 +536,7 @@ class _BudgetDetailScreenState extends State<BudgetDetailScreen> {
     } else {
       final category = _allCategories.firstWhere(
             (cat) => cat.id == _editingCategoryId,
-        orElse: () => CategoryModel(id: '', name: 'Danh mục', iconCodePoint: 0),
+        orElse: () => CategoryModel(id: '', name: 'Danh mục', iconCodePoint: 0, type: 'expense'),
       );
       title = category.name;
     }

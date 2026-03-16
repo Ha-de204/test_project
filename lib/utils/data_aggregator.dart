@@ -41,17 +41,16 @@ class DataAggregator {
       }
 
       if (results[1] != null) {
-        _allCategories = (results[1] as List)
-            .map((json) => json as CategoryModel)
-            .toList();
+        _allCategories = results[1] as List<CategoryModel>;
       }
+
       debugPrint("Aggregator: Đã tải ${_allTransactions.length} giao dịch.");
     } catch (e) {
       debugPrint("Lỗi khi đồng bộ dữ liệu Aggregator: $e");
     }
   }
 
-  static List<CategoryExpense> aggregateCategoryExpenses(DateTime date, int filterIndex) {
+  static List<CategoryExpense> aggregateCategoryExpenses(DateTime date, int filterIndex, String targetType) {
     DateTime startDate;
     DateTime endDate;
 
@@ -66,33 +65,34 @@ class DataAggregator {
       endDate = getEndOfYear(date);
     }
 
-    // Lọc giao dịch chi tiêu (Expense) trong khoảng thời gian
+    // Lọc giao dịch trong khoảng thời gian
     final filteredTransactions = _allTransactions.where((tx) {
       final DateTime txDate = DateTime.parse(tx['date']);
       final String type = (tx['type'] ?? 'expense').toString().toLowerCase();
 
-      return type == 'expense' &&
+      return type == targetType &&
           txDate.isAfter(startDate.subtract(const Duration(seconds: 1))) &&
           txDate.isBefore(endDate.add(const Duration(seconds: 1)));
     }).toList();
 
-    return _processExpenses(filteredTransactions);
+    return _processExpenses(filteredTransactions, targetType);
   }
 
-  static List<CategoryExpense> _processExpenses(List<dynamic> expenses) {
+  static List<CategoryExpense> _processExpenses(List<dynamic> transactions, String targetType,) {
 
     final Map<String, double> nameTotals = {};
 
-    for (var tx in expenses) {
+    for (var tx in transactions) {
       final double amount = (tx['amount'] as num?)?.toDouble() ?? 0.0;
       final String catId = (tx['category_id'] ?? tx['categoryId'] ?? "").toString();
       final String catNameFromTx = (tx['category_name'] ?? tx['title'] ?? "Khác").toString();
+      final String type = (tx['type'] ?? 'expense').toString().toLowerCase();
 
       final matchedCat = _allCategories.firstWhere(
             (c) => c.id == catId,
         orElse: () => _allCategories.firstWhere(
               (c) => c.name.toLowerCase() == catNameFromTx.toLowerCase(),
-          orElse: () => CategoryModel(id: '', name: catNameFromTx, iconCodePoint: 58248),
+          orElse: () => CategoryModel(id: '', name: catNameFromTx, iconCodePoint: 58248, type: targetType),
         ),
       );
 
@@ -104,20 +104,20 @@ class DataAggregator {
 
     }
 
-    final totalExpense = nameTotals.values.fold(0.0, (sum, amt) => sum + amt);
-    if (totalExpense == 0.0) return [];
+    final totalAmount = nameTotals.values.fold(0.0, (sum, amt) => sum + amt);
+    if (totalAmount == 0.0) return [];
 
     return nameTotals.entries.map((entry) {
       final categoryInfo = _allCategories.firstWhere(
             (c) => c.name == entry.key,
-        orElse: () => CategoryModel(id: '', name: entry.key, iconCodePoint: 58248),
+        orElse: () => CategoryModel(id: '', name: entry.key, iconCodePoint: 58248, type: targetType),
       );
 
       return CategoryExpense(
         categoryName: entry.key,
         totalAmount: entry.value,
         icon: IconData(categoryInfo.iconCodePoint ?? 58248, fontFamily: 'MaterialIcons'),
-        percentage: entry.value / totalExpense,
+        percentage: entry.value / totalAmount,
       );
     }).toList()..sort((a, b) => b.totalAmount.compareTo(a.totalAmount));
   }
@@ -159,10 +159,20 @@ class DataAggregator {
     });
   }
 
-  // tổng chi tiêu
-  static double getTotalExpense(DateTime date, int filterIndex) {
-    final data = aggregateCategoryExpenses(date, filterIndex);
+  // tổng chi tieu / thu nhap
+  static double getTotalAmount(DateTime date, int filterIndex, String targetType) {
+    final data = aggregateCategoryExpenses(date, filterIndex, targetType);
     return data.fold(0.0, (sum, item) => sum + item.totalAmount);
+  }
+
+  static double getBalance(DateTime date, int filterIndex) {
+    final income =
+    getTotalAmount(date, filterIndex, "income");
+
+    final expense =
+    getTotalAmount(date, filterIndex, "expense");
+
+    return income - expense;
   }
 
   // lấy dl cho các chu kỳ trước

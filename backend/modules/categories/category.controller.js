@@ -6,7 +6,15 @@ const getCategories = async (req, res) => {
 
     try {
         const categories = await categoryService.getCategoriesByUser(user_id);
-        res.status(200).json(categories);
+        const mapped = categories.map(cat => ({
+            id: cat._id,
+            label: cat.name,
+            icon: cat.icon_code_point,
+            type: cat.type,
+            isSetting: cat.name === 'Cài đặt'
+        }));
+
+        res.json(mapped);
     } catch (error) {
         console.error('Lỗi lấy danh mục:', error);
         res.status(500).json({ message: 'Lỗi máy chủ nội bộ khi lấy danh mục.' });
@@ -16,7 +24,7 @@ const getCategories = async (req, res) => {
 const createCategory = async (req, res) => {
     const user_id = req.user_id;
     //const user_id = "658123456789012345678901";
-    const { name, iconCodePoint } = req.body;
+    const { name, iconCodePoint, type } = req.body;
 
     console.log('ID người dùng nhận được trong Controller:', user_id);
 
@@ -24,17 +32,18 @@ const createCategory = async (req, res) => {
         return res.status(401).json({ message: 'Không được phép. Vui lòng đăng nhập lại.' });
     }
 
-    if (!name || iconCodePoint === undefined) {
-        return res.status(400).json({ message: 'Vui lòng cung cấp tên và mã icon.' });
+    if (!name || iconCodePoint === undefined || !type) {
+        return res.status(400).json({ message: 'Thiếu dữ liệu.' });
     }
 
     try {
-        const categoryId = await categoryService.createCategory(user_id, name, iconCodePoint);
+        const categoryId = await categoryService.createCategory(user_id, name, iconCodePoint, type);
 
         res.status(201).json({
             category_id: categoryId,
             name,
             icon_code_point: iconCodePoint,
+            type,
             message: 'Tạo danh mục thành công.'
         });
     } catch (error) {
@@ -48,9 +57,9 @@ const updateCategory = async (req, res) => {
     const user_id = req.user_id;
     //const user_id = "658123456789012345678901";
     const categoryId = req.params.id;
-    const { name, iconCodePoint } = req.body;
+    const { name, iconCodePoint, type } = req.body;
 
-    if (!categoryId || categoryId.length !== 24 || !name || iconCodePoint === undefined) {
+    if (!categoryId || categoryId.length !== 24 || !name || iconCodePoint === undefined || !type) {
         return res.status(400).json({ message: 'Dữ liệu cập nhật hoặc ID danh mục không hợp lệ.' });
     }
 
@@ -59,7 +68,8 @@ const updateCategory = async (req, res) => {
             categoryId,
             user_id,
             name,
-            iconCodePoint
+            iconCodePoint,
+            type
         );
 
         if (!updated) {

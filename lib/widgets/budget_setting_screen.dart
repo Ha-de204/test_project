@@ -366,7 +366,7 @@ class _BudgetSettingScreenState extends State<BudgetSettingScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
               child: Column(
                 children: [
-                  _buildBudgetSettingRow(CategoryModel(id: 'TOTAL', name: 'Ngân sách hàng tháng', iconCodePoint: 58164)),
+                  _buildBudgetSettingRow(CategoryModel(id: 'TOTAL', name: 'Ngân sách hàng tháng', iconCodePoint: 58164, type:'expense')),
                   ..._categories
                       .where((cat) => _cleanId(cat.id) != '000000000000000000000000')
                       .map((item) => _buildBudgetSettingRow(item))

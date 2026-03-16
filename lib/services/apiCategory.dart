@@ -9,8 +9,11 @@ class CategoryService {
   Future<List<CategoryModel>> getCategories() async {
     try {
       final response = await _dio.get("categories/list");
-      if (response.data != null && response.data is List) {
-        return (response.data as List)
+      print(response.data);
+
+      final data = response.data;
+      if (data != null && data is List) {
+        return data
             .map((item) => CategoryModel.fromJson(item))
             .toList();
       }
@@ -22,11 +25,12 @@ class CategoryService {
   }
 
   // 2. Tạo danh mục mới
-  Future<Map<String, dynamic>> createCategory(String name, int iconCodePoint) async {
+  Future<Map<String, dynamic>> createCategory(String name, int iconCodePoint, type) async {
     try {
       final response = await _dio.post("categories/create", data: {
         "name": name,
         "iconCodePoint": iconCodePoint,
+        "type": type,
       });
       return {"success": true, "data": response.data};
     } on DioException catch (e) {
@@ -38,11 +42,12 @@ class CategoryService {
   }
 
   // 3. Cập nhật danh mục
-  Future<Map<String, dynamic>> updateCategory(String id, String name, int iconCodePoint) async {
+  Future<Map<String, dynamic>> updateCategory(String id, String name, int iconCodePoint, type) async {
     try {
       final response = await _dio.put("categories/$id", data: {
         "name": name,
         "iconCodePoint": iconCodePoint,
+        "type": type,
       });
       return {"success": true, "message": response.data['message']};
     } on DioException catch (e) {

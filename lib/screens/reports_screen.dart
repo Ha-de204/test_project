@@ -9,6 +9,7 @@ import '../models/category_model.dart';
 class ReportData {
   final String monthLabel;
   final double totalExpense;
+  final double totalIncome;
   final double balance;
   final double monthlyBudget;
   final double budgetSpent;
@@ -18,6 +19,7 @@ class ReportData {
   ReportData({
     required this.monthLabel,
     required this.totalExpense,
+    required this.totalIncome,
     required this.balance,
     required this.monthlyBudget,
     required this.budgetSpent,
@@ -82,13 +84,27 @@ class _ReportsScreenState extends State<ReportsScreen> {
       final year = int.parse(parts[0]);
       final month = int.parse(parts[1]);
 
-      final expense = txList.fold(0.0, (sum, tx) => sum + (tx['amount'] as num).toDouble());
-      final balance = monthlyBudget - expense;
+      double totalExpense = 0;
+      double totalIncome = 0;
+
+      for (var tx in txList) {
+        final amount = (tx['amount'] as num).toDouble();
+        final type = (tx['type'] ?? 'expense').toString();
+
+        if (type == 'income') {
+          totalIncome += amount;
+        } else {
+          totalExpense += amount;
+        }
+      }
+
+      final balance = totalIncome - totalExpense;
 
       monthlyData.add(MonthlyExpenseData(
         month: month,
         year: year,
-        expense: expense,
+        expense: totalExpense,
+        income:totalIncome,
         balance: balance,
       ));
     });
@@ -114,15 +130,29 @@ class _ReportsScreenState extends State<ReportsScreen> {
     }).toList();
 
     // tinh tong chi tieu
-    final totalExpense = monthTransactions.fold(0.0, (sum, tx) => sum + (tx['amount'] as num).toDouble());
+    double totalExpense = 0;
+    double totalIncome = 0;
+
+    for (var tx in monthTransactions) {
+      final amount = (tx['amount'] as num).toDouble();
+      final type = (tx['type'] ?? 'expense').toString();
+
+      if (type == 'income') {
+        totalIncome += amount;
+      } else {
+        totalExpense += amount;
+      }
+    }
+
+    final balance = totalIncome - totalExpense;
     final double monthlyBudget = budgetMap['TOTAL'] ?? 0.0;
 
-    final balance = monthlyBudget - totalExpense;
     final allMonthlyReports = _getMonthlyExpenseData(transactions,  budgetMap);
 
     return ReportData(
       monthLabel: 'Thg ${targetMonth}, ${targetYear}',
       totalExpense: totalExpense,
+      totalIncome: totalIncome,
       balance: balance,
       monthlyBudget: monthlyBudget,
       budgetSpent: totalExpense,
@@ -241,7 +271,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(data.monthLabel,
-                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black),
+                            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.black),
                           ),
                           const SizedBox(height: 4),
 
@@ -255,12 +285,29 @@ class _ReportsScreenState extends State<ReportsScreen> {
                         children: [
                           const Text(
                             'Chi tiêu',
-                            style: TextStyle(fontSize: 15, color: Colors.black),
+                            style: TextStyle(fontSize: 13, color: Colors.black),
                           ),
                           const SizedBox(height: 4),
                           Text(
                             _formatAmount(data.totalExpense),
-                            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.black), // Màu đen
+                            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.black), // Màu đen
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          const Text(
+                            'Thu nhập',
+                            style: TextStyle(fontSize: 13, color: Colors.black),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            _formatAmount(data.totalIncome),
+                            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.black,),
                           ),
                         ],
                       ),
@@ -272,15 +319,12 @@ class _ReportsScreenState extends State<ReportsScreen> {
                         children: [
                           const Text(
                             'Số dư',
-                            style: TextStyle(fontSize: 15, color: Colors.black),
+                            style: TextStyle(fontSize: 13, color: Colors.black),
                           ),
                           const SizedBox(height: 4),
                           Text(
                             _formatAmount(data.balance),
-                            style: TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.bold,
-                              color: data.balance >= 0 ? Colors.green.shade700 : Colors.red.shade700, // Giữ màu trạng thái
+                            style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: data.balance >= 0 ? Colors.green.shade700 : Colors.red.shade700, // Giữ màu trạng thái
                             ),
                           ),
                         ],

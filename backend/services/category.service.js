@@ -14,35 +14,41 @@ const getCategoriesByUser = async (user_id) => {
 // 2. Tao danh muc mac dinh
 const createDefaultCategories = async (user_id) => {
     const defaultCategories = [
-        { name: 'Mua sắm', iconCodePoint: 0xe59c },
-        { name: 'Đồ ăn', iconCodePoint: 0xe25a },
-        { name: 'Quần áo', iconCodePoint: 0xf5d1 },
-        { name: 'Nhà ở', iconCodePoint: 0xe318 },
-        { name: 'Sức khỏe', iconCodePoint: 0xe25b },
-        { name: 'Học tập', iconCodePoint: 0xe0ef },
-        { name: 'Du lịch', iconCodePoint: 0xe295 },
-        { name: 'Giải trí', iconCodePoint: 0xe6a1 },
-        { name: 'Sửa chữa', iconCodePoint: 0xe0af },
-        { name: 'Sắc đẹp', iconCodePoint: 0xeb4c },
-        { name: 'Điện thoại', iconCodePoint: 0xe4e2 },
-        { name: 'Cài đặt', iconCodePoint: 0xe57f },
+        { name: 'Mua sắm', icon_code_point: 0xe59c, type: 'expense' },
+        { name: 'Đồ ăn', icon_code_point: 0xe25a, type: 'expense' },
+        { name: 'Quần áo', icon_code_point: 0xf5d1, type: 'expense' },
+        { name: 'Nhà ở', icon_code_point: 0xe318, type: 'expense' },
+        { name: 'Sức khỏe', icon_code_point: 0xe25b, type: 'expense' },
+        { name: 'Học tập', icon_code_point: 0xe0ef, type: 'expense' },
+        { name: 'Du lịch', icon_code_point: 0xe295, type: 'expense' },
+        { name: 'Giải trí', icon_code_point: 0xe6a1, type: 'expense' },
+        { name: 'Sửa chữa', icon_code_point: 0xe0af, type: 'expense' },
+        { name: 'Sắc đẹp', icon_code_point:0xeb4c, type: 'expense' },
+        { name: 'Điện thoại', icon_code_point: 0xe4e2, type: 'expense' },
+        { name: 'Cài đặt', icon_code_point: 0xe57f, type: 'expense' },
+
+        { name: 'Lương', icon_code_point: 0xe227, type: 'income' },
+        { name: 'Làm thêm', icon_code_point: 0xe8f9, type: 'income' },
+        { name: 'Tiền thưởng', icon_code_point: 0xe263, type: 'income' },
+
     ];
 
     const categoriesWithUser = defaultCategories.map(cat => ({
         ...cat,
-        user_id: user_id,
-        isDefault: true
+        user_id: new mongoose.Types.ObjectId(user_id),
+        is_default: true
     }));
 
-    return await CategoryModel.insertMany(categoriesWithUser);
+    return await Category.insertMany(categoriesWithUser);
 };
 
 // 3. Tạo danh mục mới
-const createCategory = async (user_id, name, iconCodePoint) => {
+const createCategory = async (user_id, name, iconCodePoint, type) => {
     const newCategory = new Category({
         user_id: new mongoose.Types.ObjectId(user_id),
         name: name,
         icon_code_point: iconCodePoint,
+         type: type,
         is_default: false
     });
 
@@ -51,7 +57,7 @@ const createCategory = async (user_id, name, iconCodePoint) => {
 };
 
 // 4. Cập nhật danh mục (Chỉ cho phép sửa danh mục riêng của user)
-const updateCategory = async (categoryId, user_id, name, iconCodePoint) => {
+const updateCategory = async (categoryId, user_id, name, iconCodePoint, type) => {
     const result = await Category.updateOne(
         {
             _id: new mongoose.Types.ObjectId(categoryId),
@@ -60,7 +66,8 @@ const updateCategory = async (categoryId, user_id, name, iconCodePoint) => {
         },
         {
             name: name,
-            icon_code_point: iconCodePoint
+            icon_code_point: iconCodePoint,
+            type: type
         }
     );
 
