@@ -3,7 +3,7 @@ import '../constants.dart';
 import 'package:math_expressions/math_expressions.dart';
 import '../screens/setting_category_screen.dart';
 import '../services/apiTransaction.dart';
-import '../services/apiCategory.dart';
+import '../utils/budget_checker_service.dart';
 
 class AddTransactionContent extends StatefulWidget {
   final List<Map<String, dynamic>> categories;
@@ -67,7 +67,7 @@ class _AddTransactionContentState extends State<AddTransactionContent> {
 
       _noteController.text = tx['note']?.toString() ?? '';
 
-      // 3. Tìm Index của danh mục (Quan trọng nhất)
+      // 3. Tìm Index của danh mục
       final txCatId = (tx['category_id'] ?? tx['categoryId'])?.toString();
 
       int foundIndex = widget.categories.indexWhere((cat) {
@@ -115,7 +115,6 @@ class _AddTransactionContentState extends State<AddTransactionContent> {
 
     final double amount = double.tryParse(_displayValue) ?? 0.0;
     final selectedCategory = _filteredCategories[_selectedIndex];
-    print("DEBUG: Category đang chọn là: $selectedCategory");
 
     final String categoryId = (selectedCategory['_id'] ?? selectedCategory['id'] ?? "").toString();
     if (categoryId.isEmpty) {
@@ -127,7 +126,6 @@ class _AddTransactionContentState extends State<AddTransactionContent> {
     }
 
     try {
-      debugPrint("Đang gọi API với ID Danh mục: $categoryId, Số tiền: $amount");
       Map<String, dynamic> response;
       if (widget.isEditing) {
         // Cập nhật giao dịch hiện có
@@ -152,8 +150,6 @@ class _AddTransactionContentState extends State<AddTransactionContent> {
         );
       }
 
-      debugPrint("Kết quả Server trả về: $response");
-
       if (response != null && (response['success'] == true || response['transaction_id'] != null)) {
         debugPrint("Lưu thành công!");
         if (mounted) Navigator.pop(context, true);
@@ -174,6 +170,8 @@ class _AddTransactionContentState extends State<AddTransactionContent> {
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
+    await BudgetCheckerService()
+        .checkAndNotify(DateTime.now());
   }
 
   // HÀM HIỂN THỊ DATE PICKER

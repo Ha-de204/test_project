@@ -6,10 +6,8 @@ import '../utils/data_aggregator.dart';
 import 'package:month_year_picker/month_year_picker.dart';
 import '../services/apiBudget.dart';
 import '../services/apiCategory.dart';
-import '../services/apiReport.dart';
 import '../models/category_model.dart';
-import '../utils/notification_service.dart';
-import '../models/report_model.dart';
+
 
 class BudgetCategory {
   final String id;
@@ -41,7 +39,6 @@ class _BudgetDetailScreenState extends State<BudgetDetailScreen> {
   // Services
   final BudgetService _budgetService = BudgetService();
   final CategoryService _categoryService = CategoryService();
-  final ReportService _reportService = ReportService();
 
   // state variables
   DateTime _selectedMonthYear = DateTime.now();
@@ -134,38 +131,9 @@ class _BudgetDetailScreenState extends State<BudgetDetailScreen> {
         _totalExpense = calculatedTotalExpense;
         _isLoading = false;
       });
-      _checkThresholdsAndNotify();
     } catch (e) {
       debugPrint("Lỗi tải dữ liệu ngân sách: $e");
       setState(() => _isLoading = false);
-    }
-  }
-
-  void _checkThresholdsAndNotify() {
-    final items = _displayItems;
-    final currencyFormat = NumberFormat.currency(locale: 'vi_VN', symbol: 'VND', decimalDigits: 0);
-
-    for (var item in items) {
-      if (item.budget > 0) {
-        double usagePercent = (item.expense / item.budget) * 100;
-
-        // Kiểm tra ngưỡng 80%
-        if (usagePercent >= 80) {
-          String message = "";
-          if (usagePercent >= 100) {
-            message = "Bạn đã chi tiêu vượt mức ngân sách cho ${item.name}!";
-          } else {
-            message = "Bạn đã dùng hết ${usagePercent.toStringAsFixed(0)}% ngân sách ${item.name}. Còn lại ${currencyFormat.format(item.remaining)}.";
-          }
-
-          // Đẩy thông báo ra ngoài thiết bị
-          NotificationService().showInstantNotification(
-            id: item.id.hashCode,
-            title: "Cảnh báo định mức ⚠️",
-            body: message,
-          );
-        }
-      }
     }
   }
 
