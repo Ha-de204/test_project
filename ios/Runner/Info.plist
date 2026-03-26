@@ -45,5 +45,8 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+
+	<key>NSCameraUsageDecription</key>
+	<string>Ứng dụng cần camera để quét hóa đơn</string>
 </dict>
 </plist>

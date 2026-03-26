@@ -16,6 +16,7 @@ import 'budget_detail_screen.dart';
 import 'charts_screen.dart';
 import 'reports_screen.dart';
 import 'profile_screen.dart';
+import 'scan_camera_screen.dart';
 import '../widgets/add_transaction_content.dart';
 
 class ExpenseTrackerScreen extends StatefulWidget {
@@ -278,6 +279,48 @@ class _ExpenseTrackerScreenState extends State<ExpenseTrackerScreen> {
     setState(() {
       _selectedIndex = index;
     });
+  }
+
+  void _showMainMenu() {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+
+              ListTile(
+                leading: const Icon(Icons.add),
+                title: const Text("Thêm giao dịch"),
+                onTap: () {
+                  Navigator.pop(context);
+                  _showAddTransactionSheet();
+                },
+              ),
+
+              ListTile(
+                leading: const Icon(Icons.document_scanner),
+                title: const Text("Scan hóa đơn"),
+                onTap: () {
+                  Navigator.pop(context);
+
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const ScanCameraScreen(),
+                    ),
+                  ).then((_) => _fetchData());
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   // hien menu chon danh muc
@@ -846,10 +889,6 @@ class _ExpenseTrackerScreenState extends State<ExpenseTrackerScreen> {
   // 4. Build Function
   @override
   Widget build(BuildContext context) {
-
-    print("DEBUG: Số lượng giao dịch trong state: ${_apiTransactions.length}");
-    print("DEBUG: Số lượng giao dịch sau khi lọc: ${_filteredTransactions.length}");
-
     Widget currentBody;
     PreferredSizeWidget? currentAppBar;
 
@@ -862,7 +901,7 @@ class _ExpenseTrackerScreenState extends State<ExpenseTrackerScreen> {
         centerTitle: true,
         leading: IconButton(
           icon: const Icon(Icons.menu, color: Colors.black),
-          onPressed: () {},
+          onPressed: _showMainMenu,
         ),
         actions: <Widget>[
           if (_filterDate != null || _filterCategoryId != null)

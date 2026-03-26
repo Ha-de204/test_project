@@ -9,11 +9,13 @@ class AddTransactionContent extends StatefulWidget {
   final List<Map<String, dynamic>> categories;
   final dynamic transaction;
   final bool isEditing;
+  final Map<String, dynamic>? initialData;
 
   const AddTransactionContent({
     super.key,
     this.transaction,
     this.isEditing = false,
+    this.initialData,
     required this.categories,
   });
 
@@ -52,6 +54,13 @@ class _AddTransactionContentState extends State<AddTransactionContent> {
   @override
   void initState(){
     super.initState();
+
+    if(widget.initialData != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _fillFromOCR(widget.initialData!);
+      });
+    }
+
     // tải dl khi ở chế độ sửa
     if(widget.isEditing && widget.transaction != null){
       final tx = widget.transaction;
@@ -91,6 +100,40 @@ class _AddTransactionContentState extends State<AddTransactionContent> {
   void dispose() {
     _noteController.dispose();
     super.dispose();
+  }
+
+  void _fillFromOCR(Map<String, dynamic> data) {
+    setState(() {
+      final amount = data['amount'];
+      if(amount != null) {
+        double amt = double.tryParse(amount.toString()) ?? 0.0;
+        _displayValue = amt % 1 == 0 ? amt.toInt().toString() : amt.toString();
+      }
+
+      _selectedType = data['type'] ?? 'expense';
+
+      if(data['date'] != null) {
+        _selectedDate = DateTime.parse(data['date']);
+      }
+
+      _noteController.text = data['note'] ?? '';
+
+      if(data['category_name'] != null) {
+        final index = _filteredCategories.indexWhere(
+            (c) =>
+                c['label']
+                    .toString()
+                    .toLowerCase() ==
+                data['category_name']
+                    .toString()
+                    .toLowerCase(),
+        );
+
+        if(index != -1) {
+          _selectedIndex = index;
+        }
+      }
+    });
   }
 
   Future<void> _saveTransaction() async {

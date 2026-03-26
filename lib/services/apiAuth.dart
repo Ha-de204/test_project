@@ -7,12 +7,6 @@ import 'dart:convert';
 class AuthService {
   final Dio _dio = ApiClient.instance;
 
-  // Hàm băm mật khẩu nội bộ
-  String _hashPassword(String password) {
-    var bytes = utf8.encode(password);
-    return sha256.convert(bytes).toString();
-  }
-
   // Gọi hàm registerUser trong Controller
   Future<Map<String, dynamic>> register(String userName, String password) async {
     try {
