@@ -103,7 +103,9 @@ class _AddTransactionContentState extends State<AddTransactionContent> {
   }
 
   void _fillFromOCR(Map<String, dynamic> data) {
+    int foundIndex = -1;
     setState(() {
+      // 1. Cập nhật số tiền
       final amount = data['amount'];
       if(amount != null) {
         double amt = double.tryParse(amount.toString()) ?? 0.0;
@@ -111,29 +113,46 @@ class _AddTransactionContentState extends State<AddTransactionContent> {
       }
 
       _selectedType = data['type'] ?? 'expense';
-
       if(data['date'] != null) {
         _selectedDate = DateTime.parse(data['date']);
       }
-
       _noteController.text = data['note'] ?? '';
 
-      if(data['category_name'] != null) {
-        final index = _filteredCategories.indexWhere(
-            (c) =>
-                c['label']
-                    .toString()
-                    .toLowerCase() ==
-                data['category_name']
-                    .toString()
-                    .toLowerCase(),
+      // 2. Tìm danh mục
+      if (data['category_name'] != null) {
+        final ocrCategoryName = data['category_name'].toString().toLowerCase().trim();
+        int index = _filteredCategories.indexWhere(
+                (c) => c['label'].toString().toLowerCase().trim() == ocrCategoryName
         );
-
-        if(index != -1) {
-          _selectedIndex = index;
+        // If exact match fails, try a partial match
+        if (index == -1) {
+          index = _filteredCategories.indexWhere(
+                  (c) => c['label'].toString().toLowerCase().trim().contains(ocrCategoryName)
+          );
         }
+        if (index != -1) {
+          _selectedIndex = index;
+        } else if (_filteredCategories.isNotEmpty) {
+          _selectedIndex = 0;
+        }
+      } else if (_filteredCategories.isNotEmpty) {
+        _selectedIndex = 0; 
       }
+      foundIndex = _selectedIndex;
     });
+    if (foundIndex != -1) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final targetKey = _categoryKeys[foundIndex];
+        if (targetKey != null && targetKey.currentContext != null) {
+          Scrollable.ensureVisible(
+            targetKey.currentContext!,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+            alignment: 0.5, 
+          );
+        }
+      });
+    }
   }
 
   Future<void> _saveTransaction() async {

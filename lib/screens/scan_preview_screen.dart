@@ -32,16 +32,25 @@ class _ScanPreviewScreenState extends State<ScanPreviewScreen> {
         .toList();
 
     setState(() => _loading = false);
+    
+      if (!mounted) return;
 
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder:(_) => AddTransactionContent(
-          initialData: result,
-          categories: categories,
+      final transactionSaved = await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder:(_) => Scaffold(
+            body: SafeArea(
+              child: AddTransactionContent(
+                initialData: result,
+                categories: categories,
+              ),
+            ),
+          ), 
         ),
-      ),
-    );
+      );
+      if (transactionSaved == true && mounted) {
+        Navigator.of(context).popUntil((route) => route.isFirst);
+      }  
   }
 
   @override
