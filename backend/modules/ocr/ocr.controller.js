@@ -6,11 +6,14 @@ exports.scanReceipt = async (req, res) => {
   }
 
   try {
+    console.time("OCR");
+
     const { data: { text } } = await tesseract.recognize(
-      req.file.buffer,
-      'vie', 
-      { logger: m => console.log(m) } 
+      req.file.path,
+      'vie'
     );
+
+    console.timeEnd("OCR");
 
     // Logic to parse the extracted text and identify amount, title, date, etc.
     // This is a simplified example. We'll need to use regex and patterns.
