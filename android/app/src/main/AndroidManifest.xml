@@ -41,6 +41,7 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+        android:enableOnBackInvokedCallback="true"
 
     </application>
     <!-- Required to query activities that can process text, see:

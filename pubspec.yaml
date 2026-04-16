@@ -45,6 +45,9 @@ dependencies:
   google_mlkit_text_recognition: ^0.15.1
   permission_handler: ^12.0.1
   image_picker: ^1.2.1
+  flutter_image_compress: ^2.4.0
+  path_provider: ^2.1.5
+  image: ^4.0.17
 
 
 dev_dependencies:

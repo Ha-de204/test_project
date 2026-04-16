@@ -112,27 +112,51 @@ class _AddTransactionContentState extends State<AddTransactionContent> {
         _displayValue = amt % 1 == 0 ? amt.toInt().toString() : amt.toString();
       }
 
+      // 2. Loai giao dich & date
       _selectedType = data['type'] ?? 'expense';
-      if(data['date'] != null) {
-        _selectedDate = DateTime.parse(data['date']);
-      }
-      _noteController.text = data['note'] ?? '';
+      if (data['date'] != null) {
+        print("Dữ liệu date nhận từ server: ${data['date']}"); // In ra để xem thực sự Server gửi gì
 
-      // 2. Tìm danh mục
-      if (data['category_name'] != null) {
-        final ocrCategoryName = data['category_name'].toString().toLowerCase().trim();
-        int index = _filteredCategories.indexWhere(
-                (c) => c['label'].toString().toLowerCase().trim() == ocrCategoryName
-        );
-        // If exact match fails, try a partial match
-        if (index == -1) {
-          index = _filteredCategories.indexWhere(
-                  (c) => c['label'].toString().toLowerCase().trim().contains(ocrCategoryName)
-          );
+        final parsedDate = DateTime.tryParse(data['date'].toString());
+        if (parsedDate != null) {
+          setState(() {
+            _selectedDate = parsedDate;
+          });
+          print("Parse thành công: $_selectedDate");
+        } else {
+          print("Parse THẤT BẠI với chuỗi: ${data['date']}");
         }
-        if (index != -1) {
-          _selectedIndex = index;
-        } else if (_filteredCategories.isNotEmpty) {
+      }
+
+      // 3. Ghi chu
+      if (data['title'] != null && data['title'] != 'N/A') {
+        _noteController.text = data['title'];
+      }
+
+      //_noteController.text = data['note'] ?? '';
+
+      // 4. Tìm danh mục
+      if (data['category_name'] != null) {
+        final ocrCatName = data['category_name'].toString().toLowerCase().trim();
+
+        // Tìm index trong danh sách GỐC (chưa lọc)
+        int globalIndex = widget.categories.indexWhere(
+                (c) => c['label'].toString().toLowerCase().trim().contains(ocrCatName)
+        );
+
+        if (globalIndex != -1) {
+          // Nếu tìm thấy, phải cập nhật cả Type để danh sách hiển thị đúng tab
+          _selectedType = widget.categories[globalIndex]['type'] ?? 'expense';
+
+          // Sau khi đổi Type, tìm lại index trong danh sách ĐÃ LỌC
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            setState(() {
+              _selectedIndex = _filteredCategories.indexWhere(
+                      (c) => c['label'].toString().toLowerCase().trim().contains(ocrCatName)
+              );
+            });
+          });
+        } else {
           _selectedIndex = 0;
         }
       } else if (_filteredCategories.isNotEmpty) {
@@ -141,7 +165,9 @@ class _AddTransactionContentState extends State<AddTransactionContent> {
       foundIndex = _selectedIndex;
     });
     if (foundIndex != -1) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
+      Future.delayed(const Duration(milliseconds: 200), () {
+        if (!mounted) return;
+
         final targetKey = _categoryKeys[foundIndex];
         if (targetKey != null && targetKey.currentContext != null) {
           Scrollable.ensureVisible(
@@ -150,6 +176,8 @@ class _AddTransactionContentState extends State<AddTransactionContent> {
             curve: Curves.easeInOut,
             alignment: 0.5, 
           );
+        } else {
+          debugPrint("Không thể cuộn: targetKey hoặc context bị null cho index $foundIndex");
         }
       });
     }
@@ -462,99 +490,99 @@ class _AddTransactionContentState extends State<AddTransactionContent> {
   // Widget riêng chứa Ghi chú và bàn phím
   Widget _buildInputAndKeyboard(){
     return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Align(
-                alignment: Alignment.centerRight,
-                child: Text(
-                    _displayValue,
-                    style: TextStyle(fontSize: 36, fontWeight: FontWeight.bold, color: Colors.grey[800])
-                ),
-              ),
-              const SizedBox(height: 5),
-
-              //ghi chú
-              Container(
-                alignment: Alignment.centerLeft,
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-                decoration: BoxDecoration(
-                  color: Colors.grey[200],
-                ),
-                child: TextField(
-                  controller: _noteController,
-                  decoration: const InputDecoration(
-                    hintText: 'Ghi chú: Nhập ghi chú...',
-                    border: InputBorder.none,
-                    isDense: true,
-                    contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 15),
-                    hintStyle: TextStyle(color: Colors.grey, fontSize:16),
-                  ),
-                  style: TextStyle(fontSize: 18),
-                ),
-              ),
-            ],
-          ),
-        ),
-
-        //Bàn phím
-        SizedBox(
-          height: MediaQuery.of(context).size.height * 0.3,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8.0),
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                  Expanded(
-                    child: Row(
-                      children: [
-                        Expanded(child: _buildKeyboardButton('7')),
-                        Expanded(child: _buildKeyboardButton('8')),
-                        Expanded(child: _buildKeyboardButton('9')),
-                        Expanded(child: _buildKeyboardButton('+', isOperation: true)),
-                      ],
-                    ),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: Text(
+                      _displayValue,
+                      style: TextStyle(fontSize: 36, fontWeight: FontWeight.bold, color: Colors.grey[800])
                   ),
+                ),
+                const SizedBox(height: 5),
 
-                  Expanded(
-                    child: Row(
-                      children: [
-                        Expanded(child: _buildKeyboardButton('4')),
-                        Expanded(child: _buildKeyboardButton('5')),
-                        Expanded(child: _buildKeyboardButton('6')),
-                        Expanded(child: _buildKeyboardButton('-', isOperation: true)),
-                      ],
-                    ),
+                //ghi chú
+                Container(
+                  alignment: Alignment.centerLeft,
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[200],
                   ),
-
-                  Expanded(
-                    child: Row(
-                      children: [
-                        Expanded(child: _buildKeyboardButton('1')),
-                        Expanded(child: _buildKeyboardButton('2')),
-                        Expanded(child: _buildKeyboardButton('3')),
-                        Expanded(child: _buildKeyboardButton('/', isOperation: true)),
-                      ],
+                  child: TextField(
+                    controller: _noteController,
+                    decoration: const InputDecoration(
+                      hintText: 'Ghi chú: Nhập ghi chú...',
+                      border: InputBorder.none,
+                      isDense: true,
+                      contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 15),
+                      hintStyle: TextStyle(color: Colors.grey, fontSize:16),
                     ),
+                    style: TextStyle(fontSize: 18),
                   ),
-
-                  Expanded(
-                    child: Row(
-                      children: [
-                        Expanded(child: _buildKeyboardButton('', icon: Icons.calendar_month_outlined, onTap: _selectDate, isCalendarButton: true)),
-                        Expanded(child: _buildKeyboardButton('0')),
-                        Expanded(child: _buildKeyboardButton('', icon: Icons.backspace_outlined)),
-                        Expanded(child: _buildKeyboardButton('', icon: Icons.check, isOperation: true)),
-                      ],
-                    ),
-                  ),
+                ),
               ],
             ),
           ),
-        ),
-      ],
+
+          //Bàn phím
+          SizedBox(
+            height: MediaQuery.of(context).size.height * 0.3,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8.0),
+              child: Column(
+                children: [
+                    Expanded(
+                      child: Row(
+                        children: [
+                          Expanded(child: _buildKeyboardButton('7')),
+                          Expanded(child: _buildKeyboardButton('8')),
+                          Expanded(child: _buildKeyboardButton('9')),
+                          Expanded(child: _buildKeyboardButton('+', isOperation: true)),
+                        ],
+                      ),
+                    ),
+
+                    Expanded(
+                      child: Row(
+                        children: [
+                          Expanded(child: _buildKeyboardButton('4')),
+                          Expanded(child: _buildKeyboardButton('5')),
+                          Expanded(child: _buildKeyboardButton('6')),
+                          Expanded(child: _buildKeyboardButton('-', isOperation: true)),
+                        ],
+                      ),
+                    ),
+
+                    Expanded(
+                      child: Row(
+                        children: [
+                          Expanded(child: _buildKeyboardButton('1')),
+                          Expanded(child: _buildKeyboardButton('2')),
+                          Expanded(child: _buildKeyboardButton('3')),
+                          Expanded(child: _buildKeyboardButton('/', isOperation: true)),
+                        ],
+                      ),
+                    ),
+
+                    Expanded(
+                      child: Row(
+                        children: [
+                          Expanded(child: _buildKeyboardButton('', icon: Icons.calendar_month_outlined, onTap: _selectDate, isCalendarButton: true)),
+                          Expanded(child: _buildKeyboardButton('0')),
+                          Expanded(child: _buildKeyboardButton('', icon: Icons.backspace_outlined)),
+                          Expanded(child: _buildKeyboardButton('', icon: Icons.check, isOperation: true)),
+                        ],
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        ],
     );
   }
 
