@@ -591,6 +591,7 @@ class _ExpenseTrackerScreenState extends State<ExpenseTrackerScreen> {
       'id': c.id,
       'label': c.name,
       'icon': c.iconCodePoint,
+      'type': c.type,
       'isSetting': false,
     }).toList();
 

@@ -160,7 +160,7 @@ class _AddTransactionContentState extends State<AddTransactionContent> {
           _selectedIndex = 0;
         }
       } else if (_filteredCategories.isNotEmpty) {
-        _selectedIndex = 0; 
+        _selectedIndex = 0;
       }
       foundIndex = _selectedIndex;
     });
@@ -174,7 +174,7 @@ class _AddTransactionContentState extends State<AddTransactionContent> {
             targetKey.currentContext!,
             duration: const Duration(milliseconds: 300),
             curve: Curves.easeInOut,
-            alignment: 0.5, 
+            alignment: 0.5,
           );
         } else {
           debugPrint("Không thể cuộn: targetKey hoặc context bị null cho index $foundIndex");
@@ -367,20 +367,20 @@ class _AddTransactionContentState extends State<AddTransactionContent> {
           }
         }
       } else if (_isOperator(key)) {
-          if (_displayValue.isNotEmpty &&
-              !_isOperator(_displayValue.substring(_displayValue.length - 1))) {
-            _displayValue += key;
-          } else if (_displayValue == '0' && key == '-') {
-            _displayValue = key;
-          }
+        if (_displayValue.isNotEmpty &&
+            !_isOperator(_displayValue.substring(_displayValue.length - 1))) {
+          _displayValue += key;
+        } else if (_displayValue == '0' && key == '-') {
+          _displayValue = key;
+        }
       } else {
         if (_displayValue == '0' || _displayValue == 'Lỗi') {
-            _displayValue = key;
+          _displayValue = key;
         } else {
-            if (key == '.' && _displayValue.contains('.')) {
-              return;
-            }
-            _displayValue += key;
+          if (key == '.' && _displayValue.contains('.')) {
+            return;
+          }
+          _displayValue += key;
         }
       }
     });
@@ -407,9 +407,9 @@ class _AddTransactionContentState extends State<AddTransactionContent> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(
-            displayIcon,
-            size: 30,
-            color: isSelected ? kPrimaryPink : Colors.grey[700]
+              displayIcon,
+              size: 30,
+              color: isSelected ? kPrimaryPink : Colors.grey[700]
           ),
           const SizedBox(height: 4),
           Text(label, style: TextStyle(fontSize: 15, color: isSelected ? kPrimaryPink : Colors.black)),
@@ -427,162 +427,162 @@ class _AddTransactionContentState extends State<AddTransactionContent> {
     if (icon == Icons.check) key = 'check';
     if (icon == Icons.backspace_outlined) key = 'D';
 
-      return Padding(
-          padding: const EdgeInsets.all(4.0),
-          child: InkWell(
-            onTap: () {
-              print("Đã nhấn phím: ${icon == Icons.check ? 'DẤU TÍCH' : label}");
-              if (onTap != null) {
-                onTap();
-              } else if (icon == Icons.check) {
-                if (!_isSaving) {
-                  print("Đang gọi hàm _saveTransaction...");
-                  _saveTransaction();
-                }
-              } else {
-                _onKeyPressed(label == '' ? (icon == Icons.backspace_outlined ? 'D' : '') : label);
-              }
-            },
-            customBorder: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(5),
-            ),
+    return Padding(
+      padding: const EdgeInsets.all(4.0),
+      child: InkWell(
+        onTap: () {
+          print("Đã nhấn phím: ${icon == Icons.check ? 'DẤU TÍCH' : label}");
+          if (onTap != null) {
+            onTap();
+          } else if (icon == Icons.check) {
+            if (!_isSaving) {
+              print("Đang gọi hàm _saveTransaction...");
+              _saveTransaction();
+            }
+          } else {
+            _onKeyPressed(label == '' ? (icon == Icons.backspace_outlined ? 'D' : '') : label);
+          }
+        },
+        customBorder: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(5),
+        ),
 
-            child: Container(
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: (icon == Icons.check) ? kPrimaryPink : Colors.white,
-                borderRadius: BorderRadius.circular(5),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.grey.withOpacity(0.3),
-                    spreadRadius: 1,
-                    blurRadius: 3,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
+        child: Container(
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: (icon == Icons.check) ? kPrimaryPink : Colors.white,
+            borderRadius: BorderRadius.circular(5),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.grey.withOpacity(0.3),
+                spreadRadius: 1,
+                blurRadius: 3,
+                offset: const Offset(0, 2),
               ),
-              child: _isSaving && icon == Icons.check
-                  ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                  )
-                      : (isCalendarButton
-                ? Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.calendar_month_outlined, color: Colors.black, size: 24),
-                      const SizedBox(height: 2),
-                      Text(
-                        formattedDateShort,
-                        style: const TextStyle(fontSize: 10, color: Colors.black, fontWeight: FontWeight.bold),
-                      ),
-                    ],
-                  )
-                  : (icon != null
-                  ? Icon(icon, color: icon == Icons.check ? Colors.white : Colors.black, size: 24)
-                  : Text(label, style: TextStyle(fontSize: 24, fontWeight: isOperation ? FontWeight.bold : FontWeight.w500, color: textColor)))),
-            ),
+            ],
           ),
-        );
+          child: _isSaving && icon == Icons.check
+              ? const SizedBox(
+            width: 20,
+            height: 20,
+            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+          )
+              : (isCalendarButton
+              ? Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.calendar_month_outlined, color: Colors.black, size: 24),
+              const SizedBox(height: 2),
+              Text(
+                formattedDateShort,
+                style: const TextStyle(fontSize: 10, color: Colors.black, fontWeight: FontWeight.bold),
+              ),
+            ],
+          )
+              : (icon != null
+              ? Icon(icon, color: icon == Icons.check ? Colors.white : Colors.black, size: 24)
+              : Text(label, style: TextStyle(fontSize: 24, fontWeight: isOperation ? FontWeight.bold : FontWeight.w500, color: textColor)))),
+        ),
+      ),
+    );
   }
 
   // Widget riêng chứa Ghi chú và bàn phím
   Widget _buildInputAndKeyboard(){
     return Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Align(
+                alignment: Alignment.centerRight,
+                child: Text(
+                    _displayValue,
+                    style: TextStyle(fontSize: 36, fontWeight: FontWeight.bold, color: Colors.grey[800])
+                ),
+              ),
+              const SizedBox(height: 5),
+
+              //ghi chú
+              Container(
+                alignment: Alignment.centerLeft,
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                decoration: BoxDecoration(
+                  color: Colors.grey[200],
+                ),
+                child: TextField(
+                  controller: _noteController,
+                  decoration: const InputDecoration(
+                    hintText: 'Ghi chú: Nhập ghi chú...',
+                    border: InputBorder.none,
+                    isDense: true,
+                    contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 15),
+                    hintStyle: TextStyle(color: Colors.grey, fontSize:16),
+                  ),
+                  style: TextStyle(fontSize: 18),
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        //Bàn phím
+        SizedBox(
+          height: MediaQuery.of(context).size.height * 0.3,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8.0),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: Text(
-                      _displayValue,
-                      style: TextStyle(fontSize: 36, fontWeight: FontWeight.bold, color: Colors.grey[800])
+                Expanded(
+                  child: Row(
+                    children: [
+                      Expanded(child: _buildKeyboardButton('7')),
+                      Expanded(child: _buildKeyboardButton('8')),
+                      Expanded(child: _buildKeyboardButton('9')),
+                      Expanded(child: _buildKeyboardButton('+', isOperation: true)),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 5),
 
-                //ghi chú
-                Container(
-                  alignment: Alignment.centerLeft,
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-                  decoration: BoxDecoration(
-                    color: Colors.grey[200],
+                Expanded(
+                  child: Row(
+                    children: [
+                      Expanded(child: _buildKeyboardButton('4')),
+                      Expanded(child: _buildKeyboardButton('5')),
+                      Expanded(child: _buildKeyboardButton('6')),
+                      Expanded(child: _buildKeyboardButton('-', isOperation: true)),
+                    ],
                   ),
-                  child: TextField(
-                    controller: _noteController,
-                    decoration: const InputDecoration(
-                      hintText: 'Ghi chú: Nhập ghi chú...',
-                      border: InputBorder.none,
-                      isDense: true,
-                      contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 15),
-                      hintStyle: TextStyle(color: Colors.grey, fontSize:16),
-                    ),
-                    style: TextStyle(fontSize: 18),
+                ),
+
+                Expanded(
+                  child: Row(
+                    children: [
+                      Expanded(child: _buildKeyboardButton('1')),
+                      Expanded(child: _buildKeyboardButton('2')),
+                      Expanded(child: _buildKeyboardButton('3')),
+                      Expanded(child: _buildKeyboardButton('/', isOperation: true)),
+                    ],
+                  ),
+                ),
+
+                Expanded(
+                  child: Row(
+                    children: [
+                      Expanded(child: _buildKeyboardButton('', icon: Icons.calendar_month_outlined, onTap: _selectDate, isCalendarButton: true)),
+                      Expanded(child: _buildKeyboardButton('0')),
+                      Expanded(child: _buildKeyboardButton('', icon: Icons.backspace_outlined)),
+                      Expanded(child: _buildKeyboardButton('', icon: Icons.check, isOperation: true)),
+                    ],
                   ),
                 ),
               ],
             ),
           ),
-
-          //Bàn phím
-          SizedBox(
-            height: MediaQuery.of(context).size.height * 0.3,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8.0),
-              child: Column(
-                children: [
-                    Expanded(
-                      child: Row(
-                        children: [
-                          Expanded(child: _buildKeyboardButton('7')),
-                          Expanded(child: _buildKeyboardButton('8')),
-                          Expanded(child: _buildKeyboardButton('9')),
-                          Expanded(child: _buildKeyboardButton('+', isOperation: true)),
-                        ],
-                      ),
-                    ),
-
-                    Expanded(
-                      child: Row(
-                        children: [
-                          Expanded(child: _buildKeyboardButton('4')),
-                          Expanded(child: _buildKeyboardButton('5')),
-                          Expanded(child: _buildKeyboardButton('6')),
-                          Expanded(child: _buildKeyboardButton('-', isOperation: true)),
-                        ],
-                      ),
-                    ),
-
-                    Expanded(
-                      child: Row(
-                        children: [
-                          Expanded(child: _buildKeyboardButton('1')),
-                          Expanded(child: _buildKeyboardButton('2')),
-                          Expanded(child: _buildKeyboardButton('3')),
-                          Expanded(child: _buildKeyboardButton('/', isOperation: true)),
-                        ],
-                      ),
-                    ),
-
-                    Expanded(
-                      child: Row(
-                        children: [
-                          Expanded(child: _buildKeyboardButton('', icon: Icons.calendar_month_outlined, onTap: _selectDate, isCalendarButton: true)),
-                          Expanded(child: _buildKeyboardButton('0')),
-                          Expanded(child: _buildKeyboardButton('', icon: Icons.backspace_outlined)),
-                          Expanded(child: _buildKeyboardButton('', icon: Icons.check, isOperation: true)),
-                        ],
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          ),
-        ],
+        ),
+      ],
     );
   }
 
