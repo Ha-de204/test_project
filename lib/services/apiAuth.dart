@@ -7,13 +7,14 @@ import 'dart:convert';
 class AuthService {
   final Dio _dio = ApiClient.instance;
 
-  // Gọi hàm registerUser trong Controller
-  Future<Map<String, dynamic>> register(String userName, String password) async {
+  // Đăng kí
+  Future<Map<String, dynamic>> register(String userName, String password, String email) async {
     try {
 
       final response = await _dio.post("auth/register", data: {
         "userName": userName,
         "password": password,
+        "email": email,
       });
 
       if (response.statusCode == 200 || response.statusCode == 201) {
@@ -43,6 +44,7 @@ class AuthService {
     }
   }
 
+  // Đăng nhập
   Future<Map<String, dynamic>> login(String userName, String password) async {
     try {
       final response = await _dio.post("auth/login", data: {
@@ -66,6 +68,46 @@ class AuthService {
       return {
         "success": false,
         "message": e.response?.data['message'] ?? "Tên đăng nhập hoặc mật khẩu không chính xác"
+      };
+    }
+  }
+
+  // Hàm yc gửi mã OTP quên pw
+  Future<Map<String, dynamic>> requestForgotPassword(String email) async {
+    try {
+      final response = await _dio.post("auth/forgot-password", data: {
+        "email": email,
+      });
+
+      if (response.statusCode == 200) {
+        return {"success": true, "message": response.data['message']};
+      }
+      return {"success": false, "message": "Không thể gửi yêu cầu."};
+    } on DioException catch (e) {
+      return {
+        "success": false,
+        "message": e.response?.data['message'] ?? "Lỗi khi yêu cầu cấp OTP"
+      };
+    }
+  }
+
+  // Hàm xác thực OTP & set pw mới
+  Future<Map<String, dynamic>> resetPassword(String email, String otp, String newPassword) async {
+    try {
+      final response = await _dio.post("auth/reset-password", data: {
+        "email": email,
+        "otp": otp,
+        "newPassword": newPassword,
+      });
+
+      if (response.statusCode == 200) {
+        return {"success": true, "message": response.data['message']};
+      }
+      return {"success": false, "message": "Đặt lại mật khẩu thất bại."};
+    } on DioException catch (e) {
+      return {
+        "success": false,
+        "message": e.response?.data['message'] ?? "Mã OTP không đúng hoặc hết hạn"
       };
     }
   }

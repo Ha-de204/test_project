@@ -3,6 +3,9 @@ const dotenv = require('dotenv');
 const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
+const dns = require('dns');
+
+dns.setDefaultResultOrder('ipv4first');
 
 const authRoutes = require('./modules/auth/auth.routes');
 const categoryRoutes = require('./modules/categories/category.routes');

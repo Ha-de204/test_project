@@ -7,10 +7,11 @@ const findUserByUserName = async (userName) => {
 };
 
 // 2. Tạo người dùng mới (Dùng khi Đăng ký)
-const createUser = async (userName, password) => {
+const createUser = async (userName, password, email) => {
     const newUser = new User({
         userName: userName,
-        password: password
+        password: password,
+        email: email
     });
 
     const result = await newUser.save();
