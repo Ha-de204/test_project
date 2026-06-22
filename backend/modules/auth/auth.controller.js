@@ -87,7 +87,6 @@ const loginUser = async (req, res) => {
 };
 
 // quên password
-// quên password
 const forgotPassword = async (req, res) => {
     const { email } = req.body;
     if (!email) {
@@ -109,7 +108,6 @@ const forgotPassword = async (req, res) => {
         user.resetPasswordExpires = Date.now() + 10 * 60 * 1000;
         await user.save();
 
-        // 🔥 Gửi Mail bằng HTTP POST API xuyên qua tường lửa Render (Cổng 443 không bị chặn)
         const response = await axios.post(
             'https://api.brevo.com/v3/smtp/email',
             {

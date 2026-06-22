@@ -1,389 +1,466 @@
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
-import 'expense_detail_screen.dart';
-import 'budget_detail_screen.dart';
-import '../constants.dart';
-import '../models/monthly_expense_data.dart';
 import 'package:intl/intl.dart';
-import '../models/category_model.dart';
 
-class ReportData {
-  final String monthLabel;
-  final double totalExpense;
-  final double totalIncome;
-  final double balance;
-  final double monthlyBudget;
-  final double budgetSpent;
-  final List<dynamic> monthTransactions;
-  final List<MonthlyExpenseData> monthlyReports;
-
-  ReportData({
-    required this.monthLabel,
-    required this.totalExpense,
-    required this.totalIncome,
-    required this.balance,
-    required this.monthlyBudget,
-    required this.budgetSpent,
-    required this.monthTransactions,
-    required this.monthlyReports,
-  });
-}
+import '../services/apiReport.dart';
+import '../models/report_model.dart';
+import 'package:month_year_picker/month_year_picker.dart';
 
 class ReportsScreen extends StatefulWidget {
-  final List<dynamic> transactions;
-  final Map<String, double> budgetsMap;
-  const ReportsScreen({
-    super.key,
-    required this.transactions,
-    required this.budgetsMap,
-  });
+  const ReportsScreen({super.key});
 
   @override
   State<ReportsScreen> createState() => _ReportsScreenState();
 }
 
 class _ReportsScreenState extends State<ReportsScreen> {
-  late ReportData _currentMonthReport;
-  final now = DateTime.now();
+  final ReportService _service = ReportService();
+  DateTime selectedMonth = DateTime.now();
+  ReportSummaryModel? summary;
+  List<MonthlyFlowModel> monthlyFlow = [];
+  bool isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _currentMonthReport = _getReportDataForCurrentMonth(widget.transactions, widget.budgetsMap);
+    loadData();
   }
 
-  @override
-  void didUpdateWidget(ReportsScreen oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    _currentMonthReport = _getReportDataForCurrentMonth(widget.transactions, widget.budgetsMap);
+  Future<void> loadData() async {
+
+    setState(() {
+      isLoading = true;
+    });
+
+    final startDate = DateTime(
+      selectedMonth.year,
+      selectedMonth.month,
+      1,
+    );
+
+    final endDate = DateTime(
+      selectedMonth.year,
+      selectedMonth.month + 1,
+      0,
+    );
+
+    final summaryData = await _service.getSummary(
+      startDate.toIso8601String(),
+      endDate.toIso8601String(),
+    );
+
+    final flowData = await _service.getMonthlyFlow(
+      selectedMonth.year,
+    );
+
+    setState(() {
+      summary = summaryData;
+      monthlyFlow = flowData;
+      isLoading = false;
+    });
   }
 
-  // dinh dang tien
-  String _formatAmount(double amount) {
-    final formatter = NumberFormat.currency(
+  String formatMoney(double value) {
+    return NumberFormat.currency(
       locale: 'vi_VN',
-      symbol: '',
+      symbol: 'đ',
       decimalDigits: 0,
-    );
-    return formatter.format(amount);
+    ).format(value);
   }
 
-  // ham tong hop toan bo giao dich
-  List<MonthlyExpenseData> _getMonthlyExpenseData(List<dynamic> transactions, Map<String, double> budgetMap) {
-    final Map<String, List<dynamic>> grouped = {};
-    for(var tx in transactions){
-      final date = DateTime.parse(tx['date']);
-      final key = DateFormat('yyyy-MM').format(date);
-      grouped.putIfAbsent(key, () => []);
-      grouped[key]!.add(tx);
-    }
-    final List<MonthlyExpenseData> monthlyData = [];
-    final double monthlyBudget = budgetMap['TOTAL'] ?? 0.0;
+  Widget buildLegend(Color color, String text) {
 
-    grouped.forEach((key, txList) {
-      final parts = key.split('-');
-      final year = int.parse(parts[0]);
-      final month = int.parse(parts[1]);
-
-      double totalExpense = 0;
-      double totalIncome = 0;
-
-      for (var tx in txList) {
-        final amount = (tx['amount'] as num).toDouble();
-        final type = (tx['type'] ?? 'expense').toString();
-
-        if (type == 'income') {
-          totalIncome += amount;
-        } else {
-          totalExpense += amount;
-        }
-      }
-
-      final balance = totalIncome - totalExpense;
-
-      monthlyData.add(MonthlyExpenseData(
-        month: month,
-        year: year,
-        expense: totalExpense,
-        income:totalIncome,
-        balance: balance,
-      ));
-    });
-
-    monthlyData.sort((a, b) {
-      final aDate = a.year * 100 + a.month;
-      final bDate = b.year * 100 + b.month;
-      return bDate.compareTo(aDate);
-    });
-
-    return monthlyData;
-  }
-
-  // ham tong hop dl bao cao
-  ReportData _getReportDataForCurrentMonth(List<dynamic> transactions, Map<String, double> budgetMap){
-    final targetMonth = now.month;
-    final targetYear = now.year;
-
-    // loc giao dich thang hien tai
-    final monthTransactions = transactions.where((tx) {
-      final date = DateTime.parse(tx['date']);
-      return date.month == targetMonth && date.year == targetYear;
-    }).toList();
-
-    // tinh tong chi tieu
-    double totalExpense = 0;
-    double totalIncome = 0;
-
-    for (var tx in monthTransactions) {
-      final amount = (tx['amount'] as num).toDouble();
-      final type = (tx['type'] ?? 'expense').toString();
-
-      if (type == 'income') {
-        totalIncome += amount;
-      } else {
-        totalExpense += amount;
-      }
-    }
-
-    final balance = totalIncome - totalExpense;
-    final double monthlyBudget = budgetMap['TOTAL'] ?? 0.0;
-
-    final allMonthlyReports = _getMonthlyExpenseData(transactions,  budgetMap);
-
-    return ReportData(
-      monthLabel: 'Thg ${targetMonth}, ${targetYear}',
-      totalExpense: totalExpense,
-      totalIncome: totalIncome,
-      balance: balance,
-      monthlyBudget: monthlyBudget,
-      budgetSpent: totalExpense,
-      monthTransactions: monthTransactions,
-      monthlyReports: allMonthlyReports,
-    );
-
-  }
-
-  // link den tran chi tiet chi tieu
-  void _openMonthlyExpenseDetail() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => ExpenseDetailScreen(
-          monthlyData: _currentMonthReport.monthlyReports,
-        ),
-      ),
-    );
-  }
-
-  void _openMonthlyBudgetDetail() async {
-    await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => BudgetDetailScreen(
-          period: DateFormat('yyyy-MM').format(now),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildReportRow(String label, double value, {Color valueColor = Colors.black}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label, style: const TextStyle(fontSize: 15, color: Colors.black)),
-          Text(
-            _formatAmount(value),
-            style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: valueColor),
+    return Row(
+      children: [
+        Container(
+          width: 12,
+          height: 12,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(20),
           ),
-        ],
-      ),
-    );
-  }
+        ),
 
-  Widget _buildReportCard({required String title, required Widget child, required VoidCallback onTap}) {
-    return InkWell(
-      onTap: onTap,
-      child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
-        padding: const EdgeInsets.all(16.0),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(10.0),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 5,
-              offset: const Offset(0, 2),
-            ),
-          ],
+        const SizedBox(width: 6),
+        Text(
+          text,
+          style: const TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+          ),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                const Icon(Icons.chevron_right, color: Colors.grey),
-              ],
-            ),
-            const Divider(),
-            child,
-          ],
-        ),
-      ),
+      ],
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final data = _currentMonthReport;
-    double budgetRemaining = data.monthlyBudget - data.budgetSpent;
-    double budgetPercentage = data.monthlyBudget > 0 ? (data.budgetSpent / data.monthlyBudget) : 0;
+    if (isLoading) {
+      return const Center(
+        child: CircularProgressIndicator(),
+      );
+    }
 
-    double progressValue = budgetPercentage.clamp(0.0, 1.0);
+    return Scaffold(
+      backgroundColor: const Color(0xFFFFF1F5),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            // filter
+            Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 14,
+              ),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(18),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  )
+                ],
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.filter_alt_outlined,
+                        size: 20,
+                      ),
 
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Padding(
-            padding: EdgeInsets.only(top: 24.0, left: 16.0, right: 16.0, bottom: 8.0),
-          ),
-          //  thong ke hang thang
-          _buildReportCard(
-            title: 'Thống kê hàng tháng',
-            onTap: _openMonthlyExpenseDetail,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+                      const SizedBox(width: 10),
+                      Text(
+                        DateFormat('MM/yyyy').format(selectedMonth),
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  GestureDetector(
+                    onTap: () async {
+
+                      final picked = await showMonthYearPicker(
+                        context: context,
+                        initialDate: selectedMonth,
+                        firstDate: DateTime(2023),
+                        lastDate: DateTime(2030),
+                        locale: const Locale('vi'),
+
+                        builder: (context, child) {
+                          return Transform.scale(
+                            scale: 0.95,
+                            child: Theme(
+                              data: ThemeData.light().copyWith(
+                                colorScheme: const ColorScheme.light(
+                                  primary: Color(0xFFFF5C8A),
+                                  onPrimary: Colors.white,
+                                ),
+                              ),
+
+                              child: MediaQuery(
+                                data: MediaQuery.of(context).copyWith(
+                                  textScaleFactor: 0.96,
+                                ),
+
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 16,
+                                  ),
+
+                                  child: child!,
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      );
+
+                      if (picked != null) {
+
+                        setState(() {
+
+                          selectedMonth = picked;
+                        });
+
+                        loadData();
+                      }
+                    },
+
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade100,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(Icons.keyboard_arrow_down),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 20),
+
+            // card
+            Row(
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.only(right: 16.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(data.monthLabel,
-                            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.black),
-                          ),
-                          const SizedBox(height: 4),
+                Expanded(
+                  child: buildCard(
+                    title: "Tổng chi tiêu",
+                    value: summary!.totalExpense,
+                    color: Colors.red,
+                    icon: Icons.arrow_downward,
+                  ),
+                ),
 
-                        ],
-                      ),
+                const SizedBox(width: 12),
+
+                Expanded(
+                  child: buildCard(
+                    title: "Tổng thu nhập",
+                    value: summary!.totalIncome,
+                    color: Colors.green,
+                    icon: Icons.arrow_upward,
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 24),
+
+            // line chart
+            Container(
+              height: 340,
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(24),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Xu hướng thu nhập & chi tiêu',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
                     ),
+                  ),
 
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          const Text(
-                            'Chi tiêu',
-                            style: TextStyle(fontSize: 13, color: Colors.black),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            _formatAmount(data.totalExpense),
-                            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.black), // Màu đen
-                          ),
-                        ],
+                  const SizedBox(height: 4),
+
+                  // LEGEND
+                  Row(
+                    children: [
+                      buildLegend(
+                        Colors.red,
+                        'Chi tiêu',
                       ),
-                    ),
 
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          const Text(
-                            'Thu nhập',
-                            style: TextStyle(fontSize: 13, color: Colors.black),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            _formatAmount(data.totalIncome),
-                            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.black,),
-                          ),
-                        ],
+                      const SizedBox(width: 20),
+                      buildLegend(
+                        Colors.green,
+                        'Thu nhập',
                       ),
-                    ),
+                    ],
+                  ),
 
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          const Text(
-                            'Số dư',
-                            style: TextStyle(fontSize: 13, color: Colors.black),
+                  const SizedBox(height: 32),
+
+                  Expanded(
+                    child: LineChart(
+                      LineChartData(
+                        minX: 1,
+                        maxX: 12,
+
+                        extraLinesData: ExtraLinesData(
+                          verticalLines: [
+                            VerticalLine(
+                              x: selectedMonth.month.toDouble(),
+                              color: const Color(0xFF2196F3),
+                              strokeWidth: 2,
+                              dashArray: [6, 4],
+                            ),
+                          ],
+                        ),
+
+                        gridData: FlGridData(
+                          show: true,
+                          drawVerticalLine: false,
+                        ),
+
+                        borderData: FlBorderData(
+                          show: false,
+                        ),
+
+                        titlesData: FlTitlesData(
+                          topTitles: AxisTitles(
+                            sideTitles: SideTitles(showTitles: false),
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            _formatAmount(data.balance),
-                            style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: data.balance >= 0 ? Colors.green.shade700 : Colors.red.shade700, // Giữ màu trạng thái
+
+                          rightTitles: AxisTitles(
+                            sideTitles: SideTitles(showTitles: false),
+                          ),
+
+                          leftTitles: AxisTitles(
+                            sideTitles: SideTitles(
+                              showTitles: true,
+                              reservedSize: 55,
+                            ),
+                          ),
+
+                          bottomTitles: AxisTitles(
+                            sideTitles: SideTitles(
+                              showTitles: true,
+                              getTitlesWidget: (value, meta) {
+                                return Padding(
+                                  padding: const EdgeInsets.only(top: 8),
+                                  child: Text(
+                                    'T${value.toInt()}',
+                                    style: const TextStyle(fontSize: 11),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                        ),
+
+                        lineTouchData: LineTouchData(
+                          touchTooltipData: LineTouchTooltipData(
+                            getTooltipItems: (touchedSpots) {
+                              return touchedSpots.map((spot) {
+                                return LineTooltipItem(
+                                  NumberFormat.compactCurrency(
+                                    locale: 'vi_VN',
+                                    symbol: 'đ',
+                                  ).format(spot.y),
+                                  const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                );
+                              }).toList();
+                            },
+                          ),
+                        ),
+
+                        lineBarsData: [
+
+                          // EXPENSE
+                          LineChartBarData(
+                            spots: monthlyFlow.map((e) {
+                              return FlSpot(
+                                e.month.toDouble(),
+                                e.expense,
+                              );
+                            }).toList(),
+                            isCurved: false,
+                            color: Colors.red,
+                            barWidth: 4,
+                            dotData: FlDotData(show: true),
+                            belowBarData: BarAreaData(
+                              show: true,
+                              color: Colors.red.withOpacity(0.1),
+                            ),
+                          ),
+
+                          // INCOME
+                          LineChartBarData(
+                            spots: monthlyFlow.map((e) {
+                              return FlSpot(
+                                e.month.toDouble(),
+                                e.income,
+                              );
+                            }).toList(),
+                            isCurved: false,
+                            color: Colors.green,
+                            barWidth: 4,
+                            dotData: FlDotData(
+                              show: true,
+                            ),
+
+                            belowBarData: BarAreaData(
+                              show: true,
+                              color: Colors.green.withOpacity(0.1),
                             ),
                           ),
                         ],
                       ),
                     ),
-                  ],
-                )
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
-              ],
+  Widget buildCard({
+    required String title,
+    required double value,
+    required Color color,
+    required IconData icon,
+  }) {
+
+    return Container(
+
+      padding: const EdgeInsets.all(18),
+
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+      ),
+
+      child: Column(
+
+        crossAxisAlignment: CrossAxisAlignment.start,
+
+        children: [
+
+          CircleAvatar(
+            backgroundColor: color.withOpacity(0.15),
+            child: Icon(icon, color: color),
+          ),
+
+          const SizedBox(height: 18),
+
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 15,
             ),
           ),
 
-          // ngan sach hang thang
-          _buildReportCard(
-            title: 'Ngân sách hàng tháng',
-            onTap: _openMonthlyBudgetDetail,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.start,
-              children: [
-                Container(
-                  width: 60,
-                  height: 60,
-                  margin: const EdgeInsets.only(right: 20),
-                  child: CircularProgressIndicator(
-                    value: progressValue,
-                    backgroundColor: Colors.grey[300],
-                    valueColor: AlwaysStoppedAnimation<Color>(budgetRemaining >= 0 ? Colors.green.shade700 : Colors.red.shade700),
-                    strokeWidth: 5,
-                  ),
-                ),
+          const SizedBox(height: 12),
 
-                // chi tiet ngan sach
-                Expanded(
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Ngân sách:', style: TextStyle(color: Colors.black)),
-                          Text('Chi tiêu:', style: TextStyle(color: Colors.black)),
-                          Text('Còn lại:', style: TextStyle(color: Colors.green[700])),
-                        ],
-                      ),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Text(_formatAmount(data.monthlyBudget), style: const TextStyle(fontWeight: FontWeight.bold)),
-                          Text(_formatAmount(data.budgetSpent), style: const TextStyle(fontWeight: FontWeight.bold)),
-                          Text(_formatAmount(budgetRemaining), style: TextStyle(fontWeight: FontWeight.bold, color: budgetRemaining >= 0 ? Colors.green[700] : Colors.red[700])),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+          Text(
+            formatMoney(value),
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+              color: color,
             ),
           ),
-          const SizedBox(height: 200),
         ],
       ),
     );

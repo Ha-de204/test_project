@@ -929,12 +929,7 @@ class _ExpenseTrackerScreenState extends State<ExpenseTrackerScreen> {
       currentBody =  const ChartsScreen();
       currentAppBar = null;
     } else if (_selectedIndex == 2) {
-      currentBody = ReportsScreen(
-        transactions: _apiTransactions,
-        budgetsMap: {
-          'TOTAL': _totalBudgetAmount,
-        },
-      );
+      currentBody = const ReportsScreen();
       currentAppBar = AppBar(
         backgroundColor: Colors.white,
         elevation: 0,

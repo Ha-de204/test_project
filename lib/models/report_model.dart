@@ -1,39 +1,46 @@
 class ReportSummaryModel {
+
   final double totalExpense;
-  final double budgetAmount;
+  final double totalIncome;
   final double netBalance;
 
   ReportSummaryModel({
     required this.totalExpense,
-    required this.budgetAmount,
+    required this.totalIncome,
     required this.netBalance,
   });
 
   factory ReportSummaryModel.fromJson(Map<String, dynamic> json) {
+
     return ReportSummaryModel(
-      totalExpense: (json['TotalExpense'] as num).toDouble(),
-      budgetAmount: (json['BudgetAmount'] as num).toDouble(),
-      netBalance: (json['NetBalance'] as num).toDouble(),
+      totalExpense: (json['TotalExpense'] ?? 0).toDouble(),
+      totalIncome: (json['TotalIncome'] ?? 0).toDouble(),
+      netBalance: (json['NetBalance'] ?? 0).toDouble(),
     );
   }
 }
 
-class CategoryBreakdownModel {
-  final String categoryId;
-  final String categoryName;
-  final double totalAmount;
+class MonthlyFlowModel {
 
-  CategoryBreakdownModel({
-    required this.categoryId,
-    required this.categoryName,
-    required this.totalAmount,
+  final int month;
+  final double expense;
+  final double income;
+  final double balance;
+
+  MonthlyFlowModel({
+    required this.month,
+    required this.expense,
+    required this.income,
+    required this.balance,
   });
 
-  factory CategoryBreakdownModel.fromJson(Map<String, dynamic> json) {
-    return CategoryBreakdownModel(
-      categoryId: json['_id'],
-      categoryName: json['categoryName'] ?? 'Không xác định',
-      totalAmount: (json['totalAmount'] as num).toDouble(),
+  factory MonthlyFlowModel.fromJson(Map<String, dynamic> json) {
+
+    return MonthlyFlowModel(
+      month: json['month'],
+      expense: (json['expense'] ?? 0).toDouble(),
+      income: (json['income'] ?? 0).toDouble(),
+      balance: (json['balance'] ?? 0).toDouble(),
     );
   }
 }

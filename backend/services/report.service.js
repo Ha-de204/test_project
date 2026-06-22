@@ -2,13 +2,14 @@ const Transaction = require('../models/Transaction');
 const Budget = require('../models/Budget');
 const mongoose = require('mongoose');
 
-// 1. Lấy tổng chi tiêu trong khoảng thời gian
+// =======================
+// 1. SUMMARY
+// =======================
 const getSummaryByDateRange = async (user_id, startDate, endDate) => {
     const result = await Transaction.aggregate([
         {
             $match: {
                 user_id: new mongoose.Types.ObjectId(user_id),
-                type: 'expense',
                 date: {
                     $gte: new Date(startDate),
                     $lte: new Date(endDate)
@@ -17,101 +18,88 @@ const getSummaryByDateRange = async (user_id, startDate, endDate) => {
         },
         {
             $group: {
-                _id: null,
-                TotalExpense: { $sum: '$amount' }
+                _id: '$type',
+                total: { $sum: '$amount' }
             }
         }
     ]);
 
-    return { TotalExpense: result[0]?.TotalExpense || 0 };
+    let totalExpense = 0;
+    let totalIncome = 0;
+
+    result.forEach(item => {
+        if (item._id === 'expense') {
+            totalExpense = item.total;
+        }
+
+        if (item._id === 'income') {
+            totalIncome = item.total;
+        }
+    });
+
+    return {
+        TotalExpense: totalExpense,
+        TotalIncome: totalIncome,
+        NetBalance: totalIncome - totalExpense
+    };
 };
 
-// 2. Thống kê chi tiết theo danh mục (Category Breakdown)
-const getCategoryBreakdown = async (user_id, startDate, endDate) => {
+// =======================
+// 2. MONTHLY FLOW
+// =======================
+const getMonthlyFlow = async (user_id, year) => {
+
+    const startOfYear = new Date(`${year}-01-01`);
+    const endOfYear = new Date(`${year}-12-31T23:59:59`);
+
     const result = await Transaction.aggregate([
         {
             $match: {
                 user_id: new mongoose.Types.ObjectId(user_id),
-                type: 'expense',
                 date: {
-                    $gte: new Date(startDate),
-                    $lte: new Date(endDate)
+                    $gte: startOfYear,
+                    $lte: endOfYear
                 }
             }
         },
         {
-            $lookup: {
-                from: 'Category',
-                localField: 'category_id',
-                foreignField: '_id',
-                as: 'category_info'
-            }
-        },
-        { $unwind: '$category_info' },
-        {
             $group: {
-                _id: '$category_id',
-                category_name: { $first: '$category_info.name' },
-                icon_code_point: { $first: '$category_info.icon_code_point' },
-                TotalAmount: { $sum: '$amount' }
-            }
-        },
-        { $sort: { TotalAmount: -1 } }
-    ]);
-
-    return result;
-};
-
-// 3. Dòng tiền hàng tháng (Monthly Flow)
-const getMonthlyFlow = async (user_id, year) => {
-    const startOfYear = new Date(`${year}-01-01`);
-    const endOfYear = new Date(`${year}-12-31T23:59:59`);
-
-    const monthlyExpenses = await Transaction.aggregate([
-        {
-            $match: {
-                user_id: new mongoose.Types.ObjectId(user_id),
-                type: 'expense',
-                date: { $gte: startOfYear, $lte: endOfYear }
-            }
-        },
-        {
-            $group: {
-                _id: { $month: '$date' },
-                TotalExpense: { $sum: '$amount' }
+                _id: {
+                    month: { $month: '$date' },
+                    type: '$type'
+                },
+                total: { $sum: '$amount' }
             }
         }
     ]);
 
-    const budgets = await Budget.find({
-        user_id: new mongoose.Types.ObjectId(user_id),
-        period: { $regex: `^${year}-` },
-        $or: [{ category_id: null }, { category_id: { $exists: false } }]
-    });
+    const finalData = [];
 
-    const finalFlow = [];
     for (let month = 1; month <= 12; month++) {
-        const periodStr = `${year}-${month.toString().padStart(2, '0')}`;
 
-        const expenseData = monthlyExpenses.find(e => e._id === month);
-        const budgetData = budgets.find(b => b.period === periodStr);
+        const expenseData = result.find(
+            r => r._id.month === month && r._id.type === 'expense'
+        );
 
-        const totalExpense = expenseData ? expenseData.TotalExpense : 0;
-        const budgetAmount = budgetData ? budgetData.budget_amount : 0;
+        const incomeData = result.find(
+            r => r._id.month === month && r._id.type === 'income'
+        );
 
-        finalFlow.push({
-            month_number: month,
-            TotalExpense: totalExpense,
-            BudgetAmount: budgetAmount,
-            NetBalance: budgetAmount - totalExpense
+        const expense = expenseData ? expenseData.total : 0;
+        const income = incomeData ? incomeData.total : 0;
+
+        finalData.push({
+            month,
+            expense,
+            income,
+            balance: income - expense
         });
     }
 
-    return finalFlow;
+    return finalData;
 };
 
 module.exports = {
     getSummaryByDateRange,
-    getCategoryBreakdown,
     getMonthlyFlow
 };
