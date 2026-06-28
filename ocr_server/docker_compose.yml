@@ -1,0 +1,7 @@
+services:
+  ocr-server:
+    image: hanguyen07/ocr-server:latest
+    container_name: ocr-server
+    restart: unless-stopped
+    ports:
+      - "7860:7860"
