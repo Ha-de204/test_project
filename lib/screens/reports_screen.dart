@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../services/apiReport.dart';
 import '../models/report_model.dart';
 import 'package:month_year_picker/month_year_picker.dart';
+import 'dart:math';
 
 class ReportsScreen extends StatefulWidget {
   const ReportsScreen({super.key});
@@ -100,6 +101,56 @@ class _ReportsScreenState extends State<ReportsScreen> {
         child: CircularProgressIndicator(),
       );
     }
+
+    final currentDate = DateTime.now();
+
+    final lastMonth = selectedMonth.year == currentDate.year
+        ? currentDate.month
+        : 12;
+
+    final values = [
+      ...monthlyFlow.map((e) => e.expense),
+      ...monthlyFlow.map((e) => e.income),
+      ...monthlyFlow.map((e) => e.budget),
+    ];
+
+    final maxValue = values.reduce(max);
+
+    final maxY = ((maxValue / 1000000).ceil() + 1) * 1000000.0;
+
+    // Chỉ lấy các tháng đã có ngân sách
+    final budgetMonths =
+    monthlyFlow.where((e) => e.budget > 0).toList();
+
+// Các tháng vượt ngân sách
+    final overBudgetMonths = budgetMonths
+        .where((e) => e.expense > e.budget)
+        .toList();
+
+// Tổng tiền vượt
+    final totalExceeded = overBudgetMonths.fold<double>(
+      0,
+          (sum, e) => sum + (e.expense - e.budget),
+    );
+
+// Tỷ lệ tháng vượt
+    final overRate = budgetMonths.isEmpty
+        ? 0
+        : overBudgetMonths.length / budgetMonths.length;
+
+// Mức sử dụng ngân sách trung bình
+    final totalExpense = budgetMonths.fold<double>(
+      0,
+          (sum, e) => sum + e.expense,
+    );
+
+    final totalBudget = budgetMonths.fold<double>(
+      0,
+          (sum, e) => sum + e.budget,
+    );
+
+    final averageUsage =
+    totalBudget == 0 ? 0 : totalExpense / totalBudget;
 
     return Scaffold(
       backgroundColor: const Color(0xFFFFF1F5),
@@ -280,16 +331,26 @@ class _ReportsScreenState extends State<ReportsScreen> {
                         Colors.green,
                         'Thu nhập',
                       ),
+
+                      const SizedBox(width: 20),
+                      buildLegend(
+                        Colors.yellow,
+                        'Ngân sách'
+                      ),
                     ],
                   ),
 
                   const SizedBox(height: 32),
 
+
                   Expanded(
                     child: LineChart(
                       LineChartData(
                         minX: 1,
-                        maxX: 12,
+                        maxX: lastMonth.toDouble(),
+
+                        minY: 0,
+                        maxY: maxY,
 
                         extraLinesData: ExtraLinesData(
                           verticalLines: [
@@ -324,6 +385,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
                             sideTitles: SideTitles(
                               showTitles: true,
                               reservedSize: 55,
+                              interval: 1000000,
+
                             ),
                           ),
 
@@ -331,6 +394,10 @@ class _ReportsScreenState extends State<ReportsScreen> {
                             sideTitles: SideTitles(
                               showTitles: true,
                               getTitlesWidget: (value, meta) {
+                                if (value < 1 || value > lastMonth) {
+                                  return const SizedBox.shrink();
+                                }
+
                                 return Padding(
                                   padding: const EdgeInsets.only(top: 8),
                                   child: Text(
@@ -345,13 +412,31 @@ class _ReportsScreenState extends State<ReportsScreen> {
 
                         lineTouchData: LineTouchData(
                           touchTooltipData: LineTouchTooltipData(
+                              maxContentWidth: 180,
                             getTooltipItems: (touchedSpots) {
                               return touchedSpots.map((spot) {
+
+                                String label;
+
+                                switch (spot.barIndex) {
+                                  case 0:
+                                    label = "Chi tiêu";
+                                    break;
+                                  case 1:
+                                    label = "Thu nhập";
+                                    break;
+                                  case 2:
+                                    label = "Ngân sách";
+                                    break;
+                                  default:
+                                    label = "";
+                                }
+
                                 return LineTooltipItem(
-                                  NumberFormat.compactCurrency(
+                                  "$label: ${NumberFormat.compactCurrency(
                                     locale: 'vi_VN',
                                     symbol: 'đ',
-                                  ).format(spot.y),
+                                  ).format(spot.y)}",
                                   const TextStyle(
                                     color: Colors.white,
                                     fontWeight: FontWeight.bold,
@@ -366,7 +451,9 @@ class _ReportsScreenState extends State<ReportsScreen> {
 
                           // EXPENSE
                           LineChartBarData(
-                            spots: monthlyFlow.map((e) {
+                            spots: monthlyFlow
+                              .where((e) => e.month <= lastMonth)
+                              .map((e) {
                               return FlSpot(
                                 e.month.toDouble(),
                                 e.expense,
@@ -374,8 +461,25 @@ class _ReportsScreenState extends State<ReportsScreen> {
                             }).toList(),
                             isCurved: false,
                             color: Colors.red,
-                            barWidth: 4,
-                            dotData: FlDotData(show: true),
+                            barWidth: 3,
+                            dotData: FlDotData(
+                              show: true,
+                              getDotPainter: (spot, percent, barData, index) {
+                                final data = monthlyFlow[index];
+
+                                final isOverBudget =
+                                    data.budget > 0 && data.expense > data.budget;
+
+                                return FlDotCirclePainter(
+                                  radius: 4,
+                                  color: isOverBudget
+                                      ? Colors.black
+                                      : Colors.red,
+                                  strokeWidth: 0.1,
+                                  strokeColor: Colors.red,
+                                );
+                              },
+                            ),
                             belowBarData: BarAreaData(
                               show: true,
                               color: Colors.red.withOpacity(0.1),
@@ -384,7 +488,9 @@ class _ReportsScreenState extends State<ReportsScreen> {
 
                           // INCOME
                           LineChartBarData(
-                            spots: monthlyFlow.map((e) {
+                            spots: monthlyFlow
+                              .where((e) => e.month <= lastMonth)
+                              .map((e) {
                               return FlSpot(
                                 e.month.toDouble(),
                                 e.income,
@@ -392,7 +498,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                             }).toList(),
                             isCurved: false,
                             color: Colors.green,
-                            barWidth: 4,
+                            barWidth: 3,
                             dotData: FlDotData(
                               show: true,
                             ),
@@ -402,6 +508,22 @@ class _ReportsScreenState extends State<ReportsScreen> {
                               color: Colors.green.withOpacity(0.1),
                             ),
                           ),
+
+                          // BUDGET
+                          LineChartBarData(
+                            spots: monthlyFlow
+                              .where((e) => e.month <= lastMonth)
+                              .map((e) {
+                              return FlSpot(
+                                e.month.toDouble(),
+                                e.budget,
+                              );
+                            }).toList(),
+                            isCurved: false,
+                            color: Colors.yellow,
+                            barWidth: 2,
+                            dotData: FlDotData(show: true),
+                          ),
                         ],
                       ),
                     ),
@@ -409,6 +531,86 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 ],
               ),
             ),
+
+            // Insight
+            Container(
+              width: double.infinity,
+              margin: const EdgeInsets.only(top: 20),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black12,
+                    blurRadius: 6,
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+
+                  const Text(
+                    "📊 Phân tích biểu đồ",
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  /// 1. Tháng vượt ngân sách
+                  if (overBudgetMonths.isEmpty)
+                    const Text("✅ Không có tháng nào vượt ngân sách.")
+                  else ...[
+                    Text(
+                      "⚠ Có ${overBudgetMonths.length}/${budgetMonths.length} tháng vượt ngân sách.",
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+
+                    const SizedBox(height: 8),
+
+                    ...overBudgetMonths.map((e) {
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 4),
+                        child: Text(
+                          "• Tháng ${e.month}: vượt ${NumberFormat.compactCurrency(
+                            locale: 'vi_VN',
+                            symbol: 'đ',
+                          ).format(e.expense - e.budget)} so với ngân sách",
+                        ),
+                      );
+                    }),
+                  ],
+
+                  const Divider(height: 28),
+
+                  /// 2. Tổng vượt
+                  Text(
+                    "💸 Tổng tiền vượt ngân sách: "
+                        "${NumberFormat.compactCurrency(locale: 'vi_VN', symbol: 'đ').format(totalExceeded)}",
+                  ),
+
+                  const SizedBox(height: 10),
+
+                  /// 3. Tỷ lệ
+                  Text(
+                    "📈 Tỷ lệ tháng vượt ngân sách: "
+                        "${(overRate * 100).toStringAsFixed(1)}%",
+                  ),
+
+                  const SizedBox(height: 10),
+
+                  /// 4. Mức sử dụng
+                  Text(
+                    "📊 Mức sử dụng ngân sách trung bình: "
+                        "${(averageUsage * 100).toStringAsFixed(1)}%",
+                  ),
+                ],
+              ),
+            )
           ],
         ),
       ),

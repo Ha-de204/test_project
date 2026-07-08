@@ -40,6 +40,8 @@ class _ExpenseTrackerScreenState extends State<ExpenseTrackerScreen> {
   String? _filterCategoryId;
   DateTime? _filterDate;
   String _selectedType = 'expense';
+  String? _highlightTransactionId;
+  final ScrollController _scrollController = ScrollController();
 
   List<CategoryModel> _apiCategories = [];
   List<dynamic> _apiTransactions = [];
@@ -67,6 +69,12 @@ class _ExpenseTrackerScreenState extends State<ExpenseTrackerScreen> {
   void initState() {
     super.initState();
     _fetchData();
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
   }
 
   String _cleanId(dynamic rawId) {
@@ -533,13 +541,24 @@ class _ExpenseTrackerScreenState extends State<ExpenseTrackerScreen> {
       },
     );
 
-    if(result == true){
-      await _fetchData();
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Giao dịch đã được lưu!'), backgroundColor: Colors.green),
+    print("BottomSheet trả về: $result");
+
+    if (result != null && result is Map<String, dynamic>) {
+
+      final txDate = DateTime.parse(result['date']);
+
+      setState(() {
+        _selectedMonthYear = DateTime(
+          txDate.year,
+          txDate.month,
         );
-      }
+
+        _highlightTransactionId = result['_id'].toString();
+      });
+
+      await _fetchData();
+
+      _scrollToHighlight();
     }
   }
 
@@ -623,9 +642,48 @@ class _ExpenseTrackerScreenState extends State<ExpenseTrackerScreen> {
       },
     );
 
-    if (result == true) {
+    if (result != null && result is Map<String, dynamic>) {
+
+      final txDate = DateTime.parse(result['date']);
+
+      setState(() {
+        _selectedMonthYear = DateTime(
+          txDate.year,
+          txDate.month,
+        );
+
+        _highlightTransactionId = result['_id'].toString();
+      });
+
       await _fetchData();
+
+      _scrollToHighlight();
     }
+  }
+
+  void _scrollToHighlight() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+
+      final index = _filteredTransactions.indexWhere(
+            (tx) => tx['_id'].toString() == _highlightTransactionId,
+      );
+
+      if (index == -1) return;
+
+      _scrollController.animateTo(
+        index * 100.0,
+        duration: const Duration(milliseconds: 500),
+        curve: Curves.easeInOut,
+      );
+
+      Future.delayed(const Duration(seconds: 3), () {
+        if (!mounted) return;
+
+        setState(() {
+          _highlightTransactionId = null;
+        });
+      });
+    });
   }
 
   //Widget xây dựng thêm 1 item giao dịch
@@ -634,6 +692,8 @@ class _ExpenseTrackerScreenState extends State<ExpenseTrackerScreen> {
     DateTime txDate = DateTime.parse(tx['date']);
     final String txCategoryId = (tx['category_id'] ?? tx['categoryId'] ?? "").toString();
     final String txTitle = (tx['title'] ?? "").toString();
+    final bool isHighlight =
+        tx['_id'].toString() == _highlightTransactionId;
 
     print("TX ID: $txCategoryId --- CAT IDs: ${_apiCategories.map((e) => e.id).toList()}");
 
@@ -673,50 +733,87 @@ class _ExpenseTrackerScreenState extends State<ExpenseTrackerScreen> {
         ? category.iconCodePoint
         : int.tryParse(category.iconCodePoint.toString()) ?? 58248;
 
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(top: 10.0, left: 16, right: 16),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(formattedDateLine, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
-              Text(
-                isIncome ? 'Thu nhập: $formattedAmount' : 'Chi tiêu: $formattedAmount',
-                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-              )
-            ],
-          ),
-        ),
-
-        InkWell(
-          onLongPress: () => _showEditOption(tx),
-          child: ListTile(
-            leading: CircleAvatar(
-              backgroundColor: kPrimaryPink.withOpacity(0.1),
-              child: Icon(
-                  IconData(
-                    category.iconCodePoint is int
-                        ? category.iconCodePoint
-                        : int.tryParse(category.iconCodePoint.toString()) ?? 58248,
-                    fontFamily: 'MaterialIcons',
-                  ),
-                  color: kPrimaryPink
-              ),
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      color: isHighlight
+          ? Colors.yellow.withOpacity(0.3)
+          : Colors.transparent,
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(top: 10.0, left: 16, right: 16),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(formattedDateLine, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+                Text(
+                  isIncome ? 'Thu nhập: $formattedAmount' : 'Chi tiêu: $formattedAmount',
+                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                )
+              ],
             ),
-            title: Text(displayNote, style: const TextStyle(fontSize: 16)),
-            trailing: Text(
-              '${isIncome ? '+' : '-'}$formattedAmount',
-              style: TextStyle(
-                fontSize: 16,
-                color: isIncome ? Colors.green : Colors.red,
-                fontWeight: FontWeight.bold,
-              ),
-            )
           ),
-        ),
-        const Divider(height: 1, indent: 16, endIndent: 16),
-      ],
+
+          InkWell(
+            onLongPress: () => _showEditOption(tx),
+            child: ListTile(
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 4,
+                ),
+
+                leading: CircleAvatar(
+                backgroundColor: kPrimaryPink.withOpacity(0.1),
+                child: Icon(
+                    IconData(
+                      category.iconCodePoint is int
+                          ? category.iconCodePoint
+                          : int.tryParse(category.iconCodePoint.toString()) ?? 58248,
+                      fontFamily: 'MaterialIcons',
+                    ),
+                    color: kPrimaryPink
+                ),
+              ),
+                title: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      displayNote,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+
+                    const SizedBox(height: 2),
+
+                    Text(
+                      '[${category.name}]',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.grey,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              trailing: Text(
+                '${isIncome ? '+' : '-'}$formattedAmount',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: isIncome ? Colors.green : Colors.red,
+                  fontWeight: FontWeight.bold,
+                ),
+              )
+            ),
+          ),
+          const Divider(height: 1, indent: 16, endIndent: 16),
+        ],
+      ),
     );
   }
 
@@ -872,14 +969,14 @@ class _ExpenseTrackerScreenState extends State<ExpenseTrackerScreen> {
                   ),
                 )
                 : ListView.builder(
-              padding: const EdgeInsets.symmetric(vertical: 8.0),
-              itemCount: transactionsToDisplay.length,
-              itemBuilder: (context, index) {
-                final tx = transactionsToDisplay[index];
-                final originalIndex = _apiTransactions.indexOf(tx);
-                return _buildTransactionItem(tx);
-              },
-            ),
+                  controller: _scrollController,
+                  padding: const EdgeInsets.symmetric(vertical: 8.0),
+                  itemCount: transactionsToDisplay.length,
+                  itemBuilder: (context, index) {
+                    final tx = transactionsToDisplay[index];
+                    return _buildTransactionItem(tx);
+                  },
+                ),
 
           ),
         ),

@@ -7,7 +7,7 @@ class ReportSummaryModel {
   ReportSummaryModel({
     required this.totalExpense,
     required this.totalIncome,
-    required this.netBalance,
+    required this.netBalance
   });
 
   factory ReportSummaryModel.fromJson(Map<String, dynamic> json) {
@@ -26,12 +26,16 @@ class MonthlyFlowModel {
   final double expense;
   final double income;
   final double balance;
+  final double budget;
+
 
   MonthlyFlowModel({
     required this.month,
     required this.expense,
     required this.income,
     required this.balance,
+    required this.budget
+
   });
 
   factory MonthlyFlowModel.fromJson(Map<String, dynamic> json) {
@@ -41,6 +45,7 @@ class MonthlyFlowModel {
       expense: (json['expense'] ?? 0).toDouble(),
       income: (json['income'] ?? 0).toDouble(),
       balance: (json['balance'] ?? 0).toDouble(),
+      budget: (json['budget'] ?? 0).toDouble(),
     );
   }
 }

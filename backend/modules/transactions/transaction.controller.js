@@ -2,18 +2,15 @@ const transactionService = require('../../services/transaction.service');
 
 const createTransaction = async (req, res) => {
     const user_id = req.user_id;
-    //const user_id = "658123456789012345678901";
     const { category_id, amount, type, date, title, note } = req.body;
 
-    console.log("Dữ liệu nhận được từ Flutter:", req.body);
-     console.log("User ID đang sử dụng:", user_id);
 
     if (!category_id || !amount || !type || !date || !title) {
         return res.status(400).json({ message: 'Thiếu dữ liệu bắt buộc (categoryId, amount, type, date, title).' , received: req.body});
     }
 
     try {
-        const transactionId = await transactionService.createTransaction(
+        const transaction = await transactionService.createTransaction(
             user_id,
             category_id,
             amount,
@@ -24,8 +21,8 @@ const createTransaction = async (req, res) => {
         );
 
         res.status(201).json({
-            transaction_id: transactionId,
-            message: 'Tạo giao dịch thành công.'
+            message: 'Tạo giao dịch thành công.',
+            transaction
         });
 
     } catch (error) {
@@ -36,7 +33,6 @@ const createTransaction = async (req, res) => {
 
 const getTransactions = async (req, res) => {
     const user_id = req.user_id;
-    //const user_id = "658123456789012345678901";
 
     try {
         const transactions = await transactionService.getTransactionsByUserId(user_id);
@@ -50,7 +46,6 @@ const getTransactions = async (req, res) => {
 // Lấy chi tiết 1 giao dịch
 const getTransactionById = async (req, res) => {
     const user_id = req.user_id;
-    //const user_id = "658123456789012345678901";
     const transaction_id = req.params.id;
 
     if (!transaction_id || transaction_id.length !== 24) {
@@ -73,7 +68,6 @@ const getTransactionById = async (req, res) => {
 // Update giao dịch
 const updateTransaction = async (req, res) => {
     const user_id = req.user_id;
-    //const user_id = "658123456789012345678901";
     const transaction_id = req.params.id;
     const { category_id, amount, type, date, title, note } = req.body;
 
@@ -82,7 +76,7 @@ const updateTransaction = async (req, res) => {
     }
 
     try {
-        const updated = await transactionService.updateTransaction(
+        const transaction = await transactionService.updateTransaction(
             transaction_id,
             user_id,
             category_id,
@@ -93,11 +87,15 @@ const updateTransaction = async (req, res) => {
             note
         );
 
-        if (!updated) {
+        if (!transaction) {
             return res.status(404).json({ message: 'Không tìm thấy giao dịch để cập nhật hoặc không có thay đổi.' });
         }
 
-        res.status(200).json({ message: 'Cập nhật giao dịch thành công.' });
+        res.status(200).json({
+            success: true,
+            message: 'Cập nhật giao dịch thành công.',
+            transaction: transaction
+        });
     } catch (error) {
         console.error('Lỗi cập nhật giao dịch:', error);
         res.status(500).json({ message: 'Lỗi máy chủ nội bộ.' });
@@ -107,7 +105,6 @@ const updateTransaction = async (req, res) => {
 // Delete giao dịch
 const deleteTransaction = async (req, res) => {
     const user_id = req.user_id;
-    //const user_id = "658123456789012345678901";
     const transaction_id = req.params.id;
 
     if (!transaction_id || transaction_id.length !== 24) {

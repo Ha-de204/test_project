@@ -72,7 +72,7 @@ class TransactionService {
         "title": title,
         "note": note ?? "",
       });
-      return {"success": true, "message": response.data['message']};
+      return {"success": true,  "data": response.data};
     } on DioException catch (e) {
       return {
         "success": false,

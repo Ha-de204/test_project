@@ -19,7 +19,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Ứng dụng Quản lý Chi tiêu',
+      title: 'Ứng dụng Quản lý Tài Chính',
       theme: ThemeData(
         scaffoldBackgroundColor: kLightPinkBackground,
         colorScheme: ColorScheme.fromSeed(seedColor: kPrimaryPink).copyWith(

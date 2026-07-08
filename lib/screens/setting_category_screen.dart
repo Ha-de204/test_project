@@ -70,6 +70,12 @@ class _SettingCategoryScreenState extends State<SettingCategoryScreen> {
   IconData? _selectedIcon;
   String _selectedType = "expense";
 
+  String capitalize(String text) {
+    if (text.isEmpty) return text;
+
+    return text[0].toUpperCase() + text.substring(1).toLowerCase();
+  }
+
   @override
   void initState() {
     super.initState();
@@ -83,7 +89,7 @@ class _SettingCategoryScreenState extends State<SettingCategoryScreen> {
   }
 
   void _saveCategory() async {
-    final categoryName = _nameController.text.trim();
+    final categoryName = capitalize(_nameController.text.trim());
     if(categoryName.isEmpty || _selectedIcon == null){
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Vui lòng nhập tên danh mục và chọn icon.')),

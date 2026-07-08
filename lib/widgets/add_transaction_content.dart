@@ -41,6 +41,13 @@ class _AddTransactionContentState extends State<AddTransactionContent> {
     return '$day thg $month, $year';
   }
 
+  String capitalizeFirst(String text) {
+    text = text.trim();
+    if (text.isEmpty) return text;
+
+    return text[0].toUpperCase() + text.substring(1);
+  }
+
   // Hàm lọc danh mục theo Thu nhập hoặc Chi tiêu
   List<Map<String, dynamic>> get _filteredCategories {
     return widget.categories.where((cat) {
@@ -54,6 +61,8 @@ class _AddTransactionContentState extends State<AddTransactionContent> {
   @override
   void initState(){
     super.initState();
+
+    print(widget.transaction);
 
     if(widget.initialData != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -77,22 +86,59 @@ class _AddTransactionContentState extends State<AddTransactionContent> {
       _noteController.text = tx['note']?.toString() ?? '';
 
       // 3. Tìm Index của danh mục
-      final txCatId = (tx['category_id'] ?? tx['categoryId'])?.toString();
+      String? txCatId;
 
-      int foundIndex = widget.categories.indexWhere((cat) {
-        final catId =(cat['id'] ?? cat['_id'])?.toString();
-        return catId != null && catId == txCatId;
-      });
-
-      if (foundIndex == -1) {
-        foundIndex = widget.categories.indexWhere(
-                (cat) =>  cat['label'].toString().toLowerCase() == tx['category_name'].toString().toLowerCase()
-        );
+      if (tx['category_id'] is Map) {
+        txCatId = tx['category_id']['_id']?.toString();
+      } else {
+        txCatId = (tx['category_id'] ?? tx['categoryId'])?.toString();
       }
 
-      setState(() {
-        _selectedIndex = foundIndex != -1 ? foundIndex : 0;
+      print("========== EDIT ==========");
+      print("txCatId = $txCatId");
+
+      for (var c in widget.categories) {
+        print("Category ${c['label']} -> id=${c['id']} _id=${c['_id']}");
+      }
+
+      int foundIndex = widget.categories.indexWhere((cat) {
+        final catId = (cat['id'] ?? cat['_id'])?.toString();
+        return catId == txCatId;
       });
+
+      print("foundIndex = $foundIndex");
+
+      if (foundIndex != -1) {
+        final selectedCategory = widget.categories[foundIndex];
+
+        _selectedType = selectedCategory['type'];
+
+        final filteredIndex = _filteredCategories.indexWhere((cat) {
+          final catId = (cat['id'] ?? cat['_id'])?.toString();
+          return catId == txCatId;
+        });
+
+        setState(() {
+          _selectedIndex = filteredIndex;
+        });
+
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+
+          final targetKey = _categoryKeys[filteredIndex];
+
+          if (targetKey?.currentContext != null) {
+            Scrollable.ensureVisible(
+              targetKey!.currentContext!,
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
+              alignment: 0.5,
+            );
+          }
+        });
+
+        print("filteredIndex = $filteredIndex");
+      }
     }
   }
 
@@ -217,6 +263,7 @@ class _AddTransactionContentState extends State<AddTransactionContent> {
 
     try {
       Map<String, dynamic> response;
+      print("B1");
       if (widget.isEditing) {
         // Cập nhật giao dịch hiện có
         response = await _transactionService.updateTransaction(
@@ -226,7 +273,7 @@ class _AddTransactionContentState extends State<AddTransactionContent> {
           type: _selectedType,
           date: _selectedDate.toIso8601String(),
           title: selectedCategory['label'].toString(),
-          note: _noteController.text,
+          note: capitalizeFirst(_noteController.text),
         );
       } else {
         // Tạo giao dịch mới
@@ -236,13 +283,20 @@ class _AddTransactionContentState extends State<AddTransactionContent> {
           type: _selectedType,
           date: _selectedDate.toIso8601String(),
           title: selectedCategory['label'].toString(),
-          note: _noteController.text,
+          note: capitalizeFirst(_noteController.text),
         );
       }
 
-      if (response != null && (response['success'] == true || response['transaction_id'] != null)) {
-        debugPrint("Lưu thành công!");
-        if (mounted) Navigator.pop(context, true);
+      print("B2");
+      print(response);
+
+      print("B3");
+
+      if (response != null && response['success'] == true) {
+        if (mounted) {
+          print("B4");
+          Navigator.pop(context, response['data']['transaction']);
+        }
       } else {
         String msg = response['message'] ?? 'Server từ chối lưu (có thể thiếu User ID)';
         if (mounted) {
@@ -251,10 +305,14 @@ class _AddTransactionContentState extends State<AddTransactionContent> {
           );
         }
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      print("========== CATCH ==========");
+      print(e);
+      print(stackTrace);
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Không thể kết nối đến máy chủ. Hãy thử lại sau!')),
+          SnackBar(content: Text(e.toString())),
         );
       }
     } finally {

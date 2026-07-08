@@ -14,7 +14,8 @@ const createTransaction = async (user_id, category_id, amount, type, date, title
     });
 
     const result = await newTransaction.save();
-    return result._id;
+    return await Transaction.findById(result._id)
+       .populate('category_id', 'name icon_code_point');
 };
 
 // 2. Lấy tất cả giao dịch của người dùng (Kèm thông tin danh mục)
@@ -36,7 +37,7 @@ const getTransactionById = async (transaction_id, user_id) => {
 
 // 4. Cập nhật giao dịch
 const updateTransaction = async (transaction_id, user_id, category_id, amount, type, date, title, note) => {
-    const result = await Transaction.updateOne(
+    const result = await Transaction.findOneAndUpdate(
         {
             _id: new mongoose.Types.ObjectId(transaction_id),
             user_id: new mongoose.Types.ObjectId(user_id)
@@ -48,10 +49,13 @@ const updateTransaction = async (transaction_id, user_id, category_id, amount, t
             date,
             title,
             note: note || null
+        },
+        {
+            new: true
         }
-    );
+    ).populate('category_id', 'name icon_code_point');
 
-    return result.modifiedCount > 0;
+    return result;
 };
 
 // 5. Xóa giao dịch
