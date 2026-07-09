@@ -10,12 +10,15 @@ class AddTransactionContent extends StatefulWidget {
   final dynamic transaction;
   final bool isEditing;
   final Map<String, dynamic>? initialData;
+  final Map<String, dynamic>? highlightCategory;
+
 
   const AddTransactionContent({
     super.key,
     this.transaction,
     this.isEditing = false,
     this.initialData,
+    this.highlightCategory,
     required this.categories,
   });
 
@@ -58,6 +61,32 @@ class _AddTransactionContentState extends State<AddTransactionContent> {
     }).toList();
   }
 
+  String get formattedAmount {
+    if (_displayValue.isEmpty || _displayValue == "Lỗi") {
+      return _displayValue;
+    }
+
+    // Nếu đang nhập phép tính thì không format
+    if (_displayValue.contains("+") ||
+        _displayValue.contains("-") ||
+        _displayValue.contains("/")) {
+      return _displayValue;
+    }
+
+    final number = _displayValue.replaceAll(".", "");
+
+    final buffer = StringBuffer();
+
+    for (int i = 0; i < number.length; i++) {
+      if (i > 0 && (number.length - i) % 3 == 0) {
+        buffer.write(".");
+      }
+      buffer.write(number[i]);
+    }
+
+    return buffer.toString();
+  }
+
   @override
   void initState(){
     super.initState();
@@ -94,9 +123,6 @@ class _AddTransactionContentState extends State<AddTransactionContent> {
         txCatId = (tx['category_id'] ?? tx['categoryId'])?.toString();
       }
 
-      print("========== EDIT ==========");
-      print("txCatId = $txCatId");
-
       for (var c in widget.categories) {
         print("Category ${c['label']} -> id=${c['id']} _id=${c['_id']}");
       }
@@ -105,8 +131,6 @@ class _AddTransactionContentState extends State<AddTransactionContent> {
         final catId = (cat['id'] ?? cat['_id'])?.toString();
         return catId == txCatId;
       });
-
-      print("foundIndex = $foundIndex");
 
       if (foundIndex != -1) {
         final selectedCategory = widget.categories[foundIndex];
@@ -122,24 +146,35 @@ class _AddTransactionContentState extends State<AddTransactionContent> {
           _selectedIndex = filteredIndex;
         });
 
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (!mounted) return;
-
-          final targetKey = _categoryKeys[filteredIndex];
-
-          if (targetKey?.currentContext != null) {
-            Scrollable.ensureVisible(
-              targetKey!.currentContext!,
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.easeInOut,
-              alignment: 0.5,
-            );
-          }
-        });
-
-        print("filteredIndex = $filteredIndex");
       }
     }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (widget.highlightCategory == null) return;
+
+      final index = _filteredCategories.indexWhere(
+            (e) =>
+        e["label"] == widget.highlightCategory!["label"] &&
+            e["type"] == widget.highlightCategory!["type"],
+      );
+
+      if (index == -1) return;
+
+      setState(() {
+        _selectedType = widget.highlightCategory!["type"];
+        _selectedIndex = index;
+      });
+
+      final key = _categoryKeys[index];
+
+      if (key?.currentContext != null) {
+        Scrollable.ensureVisible(
+          key!.currentContext!,
+          duration: const Duration(milliseconds: 350),
+          curve: Curves.easeInOut,
+          alignment: 0.5,
+        );
+      }
+    });
   }
 
   @override
@@ -359,9 +394,11 @@ class _AddTransactionContentState extends State<AddTransactionContent> {
         ),
       );
 
-      if (newCategory == true || newCategory == "refresh") {
+      print("newCategory = $newCategory");
+      if (newCategory is Map &&
+          newCategory["refresh"] == true) {
         if (mounted) {
-          Navigator.pop(context, true);
+          Navigator.pop(context, newCategory);
 
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -435,7 +472,7 @@ class _AddTransactionContentState extends State<AddTransactionContent> {
         if (_displayValue == '0' || _displayValue == 'Lỗi') {
           _displayValue = key;
         } else {
-          if (key == '.' && _displayValue.contains('.')) {
+          if (key == '.') {
             return;
           }
           _displayValue += key;
@@ -470,7 +507,19 @@ class _AddTransactionContentState extends State<AddTransactionContent> {
               color: isSelected ? kPrimaryPink : Colors.grey[700]
           ),
           const SizedBox(height: 4),
-          Text(label, style: TextStyle(fontSize: 15, color: isSelected ? kPrimaryPink : Colors.black)),
+          SizedBox(
+            width: double.infinity,
+            child: Text(
+              label,
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.visible,
+              style: TextStyle(
+                fontSize: 14,
+                color: isSelected ? kPrimaryPink : Colors.black,
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -557,7 +606,7 @@ class _AddTransactionContentState extends State<AddTransactionContent> {
               Align(
                 alignment: Alignment.centerRight,
                 child: Text(
-                    _displayValue,
+                    formattedAmount,
                     style: TextStyle(fontSize: 36, fontWeight: FontWeight.bold, color: Colors.grey[800])
                 ),
               ),
@@ -580,6 +629,34 @@ class _AddTransactionContentState extends State<AddTransactionContent> {
                     hintStyle: TextStyle(color: Colors.grey, fontSize:16),
                   ),
                   style: TextStyle(fontSize: 18),
+                ),
+              ),
+
+              const SizedBox(height: 8),
+
+              InkWell(
+                onTap: _selectDate,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 15),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[200],
+                    borderRadius: BorderRadius.circular(5),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.calendar_month_outlined),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          formattedDateShort,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ],
@@ -629,7 +706,7 @@ class _AddTransactionContentState extends State<AddTransactionContent> {
                 Expanded(
                   child: Row(
                     children: [
-                      Expanded(child: _buildKeyboardButton('', icon: Icons.calendar_month_outlined, onTap: _selectDate, isCalendarButton: true)),
+                      Expanded(child: _buildKeyboardButton('.')),
                       Expanded(child: _buildKeyboardButton('0')),
                       Expanded(child: _buildKeyboardButton('', icon: Icons.backspace_outlined)),
                       Expanded(child: _buildKeyboardButton('', icon: Icons.check, isOperation: true)),

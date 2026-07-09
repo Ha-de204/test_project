@@ -59,7 +59,7 @@ class _ExpenseTrackerScreenState extends State<ExpenseTrackerScreen> {
     {'id': '658123456789012345678009', 'label': 'Sửa chữa', 'icon': Icons.build_outlined.codePoint, 'type': 'expense'},
     {'id': '658123456789012345678010', 'label': 'Sắc đẹp', 'icon': Icons.spa_outlined.codePoint, 'type': 'expense'},
     {'id': '658123456789012345678011', 'label': 'Điện thoại', 'icon': Icons.phone_android_outlined.codePoint, 'type': 'expense'},
-    {'label': 'Cài đặt', 'icon': Icons.settings_outlined.codePoint, 'isSetting': true, 'type': 'expense'},
+    {'label': 'Thêm danh mục', 'icon': Icons.add_circle_outline.codePoint, 'isSetting': true, 'type': 'expense'},
     {'label': 'Lương', 'icon': Icons.payments_outlined.codePoint, 'type': 'income'},
     {'label': 'Làm thêm', 'icon': Icons.work_outline.codePoint, 'type': 'income'},
     {'label': 'Tiền thưởng', 'icon': Icons.card_giftcard.codePoint, 'type': 'income'},
@@ -313,16 +313,37 @@ class _ExpenseTrackerScreenState extends State<ExpenseTrackerScreen> {
               ListTile(
                 leading: const Icon(Icons.document_scanner),
                 title: const Text("Scan hóa đơn"),
-                onTap: () {
-                  Navigator.pop(context);
+                  onTap: () async {
+                    Navigator.pop(context);
 
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const ScanCameraScreen(),
-                    ),
-                  ).then((_) => _fetchData());
-                },
+                    final result = await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const ScanCameraScreen(),
+                      ),
+                    );
+
+                    if (result != null && result is Map<String, dynamic>) {
+                      final txDate = DateTime.parse(result['date']);
+
+                      setState(() {
+                        _selectedMonthYear = DateTime(
+                          txDate.year,
+                          txDate.month,
+                        );
+
+                        _highlightTransactionId = result['_id'].toString();
+                      });
+
+                      await _fetchData();
+
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        _scrollToHighlight();
+                      });
+                    } else {
+                      await _fetchData();
+                    }
+                  }
               ),
             ],
           ),
@@ -507,7 +528,9 @@ class _ExpenseTrackerScreenState extends State<ExpenseTrackerScreen> {
   }
 
   // Hàm hiển thị giao diện thêm giao dịch
-  void _showAddTransactionSheet() async {
+  void _showAddTransactionSheet({
+    Map<String, dynamic>? highlightCategory,
+  }) async {
     final List<Map<String, dynamic>> mapping = _apiCategories.map<Map<String, dynamic>>((c) => {
       'id': c.id,
       'label': c.name,
@@ -518,8 +541,8 @@ class _ExpenseTrackerScreenState extends State<ExpenseTrackerScreen> {
 
     mapping.add({
       'id': 'SETTING',
-      'label': 'Cài đặt',
-      'icon': Icons.settings_outlined.codePoint,
+      'label': 'Thêm danh mục',
+      'icon': Icons.add_circle_outline.codePoint,
       'isSetting': true,
     });
 
@@ -535,15 +558,22 @@ class _ExpenseTrackerScreenState extends State<ExpenseTrackerScreen> {
               color: Colors.white,
               borderRadius: BorderRadius.vertical(top: Radius.circular(25.0)),
             ),
-            child: AddTransactionContent(categories: mapping),
+            child: AddTransactionContent(categories: mapping, highlightCategory: highlightCategory),
           ),
         );
       },
     );
 
-    print("BottomSheet trả về: $result");
+    if (result is Map &&
+        result["refresh"] == true) {
+      await _fetchData();
 
-    if (result != null && result is Map<String, dynamic>) {
+      _showAddTransactionSheet(highlightCategory: result["category"],
+      );
+      return;
+    }
+
+    if (result is Map<String, dynamic>) {
 
       final txDate = DateTime.parse(result['date']);
 
@@ -615,8 +645,8 @@ class _ExpenseTrackerScreenState extends State<ExpenseTrackerScreen> {
     }).toList();
 
     mapping.add({
-      'label': 'Cài đặt',
-      'icon': Icons.settings_outlined.codePoint,
+      'label': 'Thêm danh mục',
+      'icon': Icons.add_circle_outline.codePoint,
       'isSetting': true,
     });
 

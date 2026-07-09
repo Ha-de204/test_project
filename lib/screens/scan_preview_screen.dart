@@ -35,23 +35,33 @@ class _ScanPreviewScreenState extends State<ScanPreviewScreen> {
 
       if (!mounted) return;
 
-      await Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => Scaffold(
-            body: SafeArea(
+      final transaction = await showModalBottomSheet<Map<String, dynamic>>(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (_) {
+          return SafeArea(
+            child: Container(
+              height: MediaQuery.of(context).size.height * 0.95,
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(
+                  top: Radius.circular(25),
+                ),
+              ),
               child: AddTransactionContent(
                 initialData: result,
                 categories: categories,
               ),
             ),
-          ),
-        ),
+          );
+        },
       );
 
-      if (mounted) {
-        Navigator.of(context).popUntil((route) => route.isFirst);
-      }
+      if (!mounted) return;
+
+      Navigator.pop(context, transaction);
+
     } catch (e) {
       setState(() => _loading = false);
       ScaffoldMessenger.of(context).showSnackBar(

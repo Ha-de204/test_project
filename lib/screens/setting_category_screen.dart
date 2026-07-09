@@ -108,7 +108,14 @@ class _SettingCategoryScreenState extends State<SettingCategoryScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Thêm danh mục thành công!')),
         );
-        Navigator.pop(context, true);
+        Navigator.pop(context, {
+          "refresh": true,
+          "category": {
+            "label": categoryName,
+            "icon": _selectedIcon!.codePoint,
+            "type": _selectedType,
+          }
+        });
       }
     } catch (e) {
       debugPrint("Lỗi khi thêm danh mục: $e");

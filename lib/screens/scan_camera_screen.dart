@@ -88,18 +88,23 @@ class _ScanCameraScreenState extends State<ScanCameraScreen> {
 
       final croppedFile = await cropToReceipt(image.path);
 
-      await Navigator.push(
+      final transaction = await Navigator.push(
         context,
         MaterialPageRoute(
           builder: (_) => ScanPreviewScreen(croppedFile.path),
         ),
       );
+      if (!mounted) return;
 
-      if (mounted) {
-        setState(() {
-          _initializationFuture = _initCamera();
-        });
+      if (transaction != null){
+        Navigator.pop(context, transaction);
+        return;
       }
+
+      setState(() {
+        _initializationFuture = _initCamera();
+      });
+
 
     } catch (e) {
       print("Lỗi khi chụp ảnh: $e");
