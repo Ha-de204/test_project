@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../constants.dart';
 import '../services/apiCategory.dart';
+import '../models/category_model.dart';
 
 final Map<String, List<IconData>> iconGroups = {
   'Mua sắm' : [
@@ -11,7 +12,7 @@ final Map<String, List<IconData>> iconGroups = {
   ],
   'Cuộc sống' : [
     Icons.home_outlined, Icons.local_cafe_outlined, Icons.tv_outlined,
-    Icons.bathtub_outlined, Icons.pool_outlined, Icons.umbrella_outlined,
+    Icons.bathtub_outlined, Icons.chair_outlined, Icons.umbrella_outlined,
   ],
   'Giải trí' : [
     Icons.videogame_asset_outlined, Icons.movie_outlined, Icons.sports_esports_outlined,
@@ -53,12 +54,16 @@ final Map<String, List<IconData>> iconGroups = {
   ],
   'Khác': [
     Icons.settings_outlined, Icons.build_outlined, Icons.phone_android_outlined,
-    Icons.home_outlined, Icons.car_repair_outlined, Icons.help_outline,
+    Icons.extension_outlined, Icons.car_repair_outlined, Icons.help_outline,
   ],
 };
 
 class SettingCategoryScreen extends StatefulWidget {
-  const SettingCategoryScreen({super.key});
+  final CategoryModel? category;
+
+  const SettingCategoryScreen({super.key, this.category});
+
+  bool get isEdit => category != null;
 
   @override
   State<SettingCategoryScreen> createState() => _SettingCategoryScreenState();
@@ -79,7 +84,15 @@ class _SettingCategoryScreenState extends State<SettingCategoryScreen> {
   @override
   void initState() {
     super.initState();
-    _selectedIcon = iconGroups.values.first.first;
+
+    if (widget.isEdit) {
+      _nameController.text = widget.category!.name;
+      _selectedIcon =
+          IconData(widget.category!.iconCodePoint, fontFamily: 'MaterialIcons');
+      _selectedType = widget.category!.type;
+    } else {
+      _selectedIcon = iconGroups.values.first.first;
+    }
   }
 
   @override
@@ -90,38 +103,48 @@ class _SettingCategoryScreenState extends State<SettingCategoryScreen> {
 
   void _saveCategory() async {
     final categoryName = capitalize(_nameController.text.trim());
-    if(categoryName.isEmpty || _selectedIcon == null){
+
+    if (categoryName.isEmpty || _selectedIcon == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Vui lòng nhập tên danh mục và chọn icon.')),
+        const SnackBar(
+          content: Text('Vui lòng nhập tên danh mục và chọn icon.'),
+        ),
       );
       return;
     }
 
-    try {
-      await _categoryService.createCategory(
+    Map<String, dynamic> result;
+
+    if (widget.isEdit) {
+      result = await _categoryService.updateCategory(
+        widget.category!.id,
         categoryName,
         _selectedIcon!.codePoint,
         _selectedType,
       );
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Thêm danh mục thành công!')),
-        );
-        Navigator.pop(context, {
-          "refresh": true,
-          "category": {
-            "label": categoryName,
-            "icon": _selectedIcon!.codePoint,
-            "type": _selectedType,
-          }
-        });
-      }
-    } catch (e) {
-      debugPrint("Lỗi khi thêm danh mục: $e");
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Lỗi: $e')),
+    } else {
+      result = await _categoryService.createCategory(
+        categoryName,
+        _selectedIcon!.codePoint,
+        _selectedType,
       );
+    }
+
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          result["message"] ??
+              (widget.isEdit
+                  ? "Cập nhật thành công"
+                  : "Thêm danh mục thành công"),
+        ),
+      ),
+    );
+
+    if (result["success"] == true) {
+      Navigator.pop(context, true);
     }
   }
 
@@ -142,7 +165,7 @@ class _SettingCategoryScreenState extends State<SettingCategoryScreen> {
         padding: const EdgeInsets.all(8.0),
         child: Icon(
           icon,
-          color: isSelected ? kPrimaryPink : Colors.grey,
+          color: isSelected ? kPrimaryPink : Colors.grey.shade600,
           size: 32,
         ),
       ),
@@ -170,7 +193,9 @@ class _SettingCategoryScreenState extends State<SettingCategoryScreen> {
     final bool isSelected = _selectedType == type;
 
     return GestureDetector(
-      onTap: () {
+      onTap: widget.isEdit
+          ? null
+          : () {
         setState(() {
           _selectedType = type;
         });
@@ -179,14 +204,15 @@ class _SettingCategoryScreenState extends State<SettingCategoryScreen> {
         padding: const EdgeInsets.symmetric(vertical: 12),
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: isSelected ? kPrimaryPink : Colors.grey[800],
+          color: isSelected ? kPrimaryPink : Colors.grey[200],
           borderRadius: BorderRadius.circular(10),
         ),
         child: Text(
           label,
           style: TextStyle(
-            color: isSelected ? Colors.white : Colors.grey[400],
+            color: isSelected ? Colors.white : Colors.black87,
             fontWeight: FontWeight.bold,
+            fontSize: 17,
           ),
         ),
       ),
@@ -197,19 +223,26 @@ class _SettingCategoryScreenState extends State<SettingCategoryScreen> {
   Widget build(BuildContext context){
     IconData displayIcon = _selectedIcon ?? iconGroups.values.first.first;
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: Colors.black,
+        backgroundColor: Colors.white,
         elevation: 0,
-        title: const Text('Thêm danh mục', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        iconTheme: const IconThemeData(color: Colors.black),
+        title: Text(
+          widget.isEdit ? 'Sửa danh mục' : 'Thêm danh mục',
+          style: const TextStyle(
+            color: Colors.black,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         centerTitle: true,
         leading: TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Hủy', style: TextStyle(color: Colors.white)),
+          child: const Text('Hủy', style: TextStyle(color: Colors.black, fontSize: 18)),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.check, color: Colors.white),
+            icon: const Icon(Icons.check, color: Colors.black),
             onPressed: _saveCategory,
           ),
         ],
@@ -237,12 +270,14 @@ class _SettingCategoryScreenState extends State<SettingCategoryScreen> {
                 Expanded(
                   child: TextField(
                     controller: _nameController,
-                    style: const TextStyle(color: Colors.white),
+                    style: const TextStyle(color: Colors.black87),
                     decoration: InputDecoration(
-                      hintText: 'Vui lòng nhập tên danh mục',
-                      hintStyle: TextStyle(color: Colors.grey[600]),
+                      hintText: widget.isEdit
+                          ? 'Tên danh mục'
+                          : 'Vui lòng nhập tên danh mục',
+                      hintStyle: TextStyle(color: Colors.grey.shade500),
                       filled: true,
-                      fillColor: Colors.grey[800],
+                      fillColor: Colors.grey.shade100,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular((8.0)),
                         borderSide: BorderSide.none,
@@ -270,7 +305,7 @@ class _SettingCategoryScreenState extends State<SettingCategoryScreen> {
                         padding: const EdgeInsets.only(top: 10.0, bottom: 10.0),
                         child: Text(
                           entry.key,
-                          style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                          style: const TextStyle(color: Colors.black87, fontSize: 18, fontWeight: FontWeight.bold),
                         ),
                       ),
                       GridView.builder(

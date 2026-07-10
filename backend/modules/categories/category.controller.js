@@ -2,17 +2,26 @@ const categoryService = require('../../services/category.service');
 
 const getCategories = async (req, res) => {
     const user_id = req.user_id;
-    //const user_id = "658123456789012345678901";
 
     try {
         const categories = await categoryService.getCategoriesByUser(user_id);
-        const mapped = categories.map(cat => ({
-            id: cat._id,
-            label: cat.name,
-            icon: cat.icon_code_point,
-            type: cat.type,
-            isSetting: cat.name === 'Cài đặt'
-        }));
+        const mapped = await Promise.all(
+            categories.map(async (cat) => {
+
+                const used = await categoryService.isCategoryUsed(cat._id);
+
+                return {
+                    id: cat._id,
+                    label: cat.name,
+                    icon: cat.icon_code_point,
+                    type: cat.type,
+                    isDefault: cat.is_default,
+                    canEdit: !cat.is_default,
+                    canDelete: !cat.is_default && !used,
+                    isSetting: cat.name === "Cài đặt"
+                };
+            })
+        );
 
         res.json(mapped);
     } catch (error) {
@@ -23,10 +32,7 @@ const getCategories = async (req, res) => {
 
 const createCategory = async (req, res) => {
     const user_id = req.user_id;
-    //const user_id = "658123456789012345678901";
     const { name, iconCodePoint, type } = req.body;
-
-    console.log('ID người dùng nhận được trong Controller:', user_id);
 
     if (!user_id) {
         return res.status(401).json({ message: 'Không được phép. Vui lòng đăng nhập lại.' });
@@ -37,14 +43,15 @@ const createCategory = async (req, res) => {
     }
 
     try {
-        const categoryId = await categoryService.createCategory(user_id, name, iconCodePoint, type);
+        const result = await categoryService.createCategory(user_id, name, iconCodePoint, type);
+        if(!result.success){
+            return res.status(400).json({
+                message: result.message
+            });
+        }
 
-        res.status(201).json({
-            category_id: categoryId,
-            name,
-            icon_code_point: iconCodePoint,
-            type,
-            message: 'Tạo danh mục thành công.'
+        return res.status(201).json({
+            message: "Tạo danh mục thành công."
         });
     } catch (error) {
         console.error('Lỗi tạo danh mục:', error);
@@ -55,7 +62,6 @@ const createCategory = async (req, res) => {
 // update danh muc
 const updateCategory = async (req, res) => {
     const user_id = req.user_id;
-    //const user_id = "658123456789012345678901";
     const categoryId = req.params.id;
     const { name, iconCodePoint, type } = req.body;
 
@@ -64,19 +70,17 @@ const updateCategory = async (req, res) => {
     }
 
     try {
-        const updated = await categoryService.updateCategory(
-            categoryId,
-            user_id,
-            name,
-            iconCodePoint,
-            type
-        );
+        const result = await categoryService.updateCategory(categoryId, user_id, name, iconCodePoint, type);
 
-        if (!updated) {
-            return res.status(404).json({ message: 'Không tìm thấy danh mục để cập nhật hoặc danh mục này là mặc định.' });
+        if (!result.success) {
+            return res.status(400).json({
+                message: result.message
+            });
         }
 
-        res.status(200).json({ message: 'Cập nhật danh mục thành công.' });
+        return res.json({
+            message: "Cập nhật thành công."
+        });
     } catch (error) {
         console.error('Lỗi cập nhật danh mục:', error);
         res.status(500).json({ message: 'Lỗi máy chủ nội bộ.' });
@@ -86,7 +90,6 @@ const updateCategory = async (req, res) => {
 // delete danh muc
 const deleteCategory = async (req, res) => {
     const user_id = req.user_id;
-    //const user_id = "658123456789012345678901";
     const categoryId = req.params.id;
 
     if (!categoryId || categoryId.length !== 24) {
@@ -94,13 +97,20 @@ const deleteCategory = async (req, res) => {
     }
 
     try {
-        const deleted = await categoryService.deleteCategory(categoryId, user_id);
+        const result = await categoryService.deleteCategory(
+            categoryId,
+            user_id
+        );
 
-        if (!deleted) {
-            return res.status(404).json({ message: 'Không tìm thấy danh mục để xóa hoặc danh mục này là mặc định.' });
+        if (!result.success) {
+            return res.status(400).json({
+                message: result.message
+            });
         }
 
-        res.status(200).json({ message: `Xóa danh mục thành công.` });
+        return res.status(200).json({
+            message: "Xóa danh mục thành công."
+        });
     } catch (error) {
         console.error('Lỗi xóa danh mục:', error);
         res.status(500).json({ message: 'Lỗi máy chủ nội bộ.' });

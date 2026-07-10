@@ -4,6 +4,7 @@ import 'package:math_expressions/math_expressions.dart';
 import '../screens/setting_category_screen.dart';
 import '../services/apiTransaction.dart';
 import '../utils/budget_checker_service.dart';
+import '../services/apiCategory.dart';
 
 class AddTransactionContent extends StatefulWidget {
   final List<Map<String, dynamic>> categories;
@@ -33,9 +34,11 @@ class _AddTransactionContentState extends State<AddTransactionContent> {
   DateTime _selectedDate = DateTime.now();
   bool _isSaving = false;
   String _selectedType = 'expense';
+  late List<Map<String, dynamic>> _categories;
 
   final TextEditingController _noteController = TextEditingController();
   final Map<int, GlobalKey> _categoryKeys = {};
+  final CategoryService _categoryService = CategoryService();
 
   String get formattedDateShort {
     final day = _selectedDate.day;
@@ -53,7 +56,7 @@ class _AddTransactionContentState extends State<AddTransactionContent> {
 
   // Hàm lọc danh mục theo Thu nhập hoặc Chi tiêu
   List<Map<String, dynamic>> get _filteredCategories {
-    return widget.categories.where((cat) {
+    return _categories.where((cat) {
       if (cat['isSetting'] == true) return true;
 
       final type = (cat['type'] ?? 'expense').toString();
@@ -92,6 +95,8 @@ class _AddTransactionContentState extends State<AddTransactionContent> {
     super.initState();
 
     print(widget.transaction);
+
+    _categories = List.from(widget.categories);
 
     if(widget.initialData != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -264,6 +269,28 @@ class _AddTransactionContentState extends State<AddTransactionContent> {
     }
   }
 
+  Future<void> _reloadCategories() async {
+    try {
+      final categories = await _categoryService.getCategories();
+
+      if (!mounted) return;
+
+      setState(() {
+        _categories = categories
+            .map((e) => {
+          "_id": e.id,
+          "id": e.id,
+          "label": e.name,
+          "icon": e.iconCodePoint,
+          "type": e.type,
+        })
+            .toList();
+      });
+    } catch (e) {
+      debugPrint(e.toString());
+    }
+  }
+
   Future<void> _saveTransaction() async {
     if (_selectedIndex == -1) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -395,10 +422,9 @@ class _AddTransactionContentState extends State<AddTransactionContent> {
       );
 
       print("newCategory = $newCategory");
-      if (newCategory is Map &&
-          newCategory["refresh"] == true) {
-        if (mounted) {
-          Navigator.pop(context, newCategory);
+      if (newCategory == true) {
+
+          await _reloadCategories();
 
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -406,7 +432,7 @@ class _AddTransactionContentState extends State<AddTransactionContent> {
               backgroundColor: Colors.green,
             ),
           );
-        }
+
       }
 
     } else {

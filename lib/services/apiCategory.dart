@@ -25,7 +25,7 @@ class CategoryService {
   }
 
   // 2. Tạo danh mục mới
-  Future<Map<String, dynamic>> createCategory(String name, int iconCodePoint, type) async {
+  Future<Map<String, dynamic>> createCategory(String name, int iconCodePoint, String type) async {
     try {
       final response = await _dio.post("categories/create", data: {
         "name": name,
@@ -36,24 +36,24 @@ class CategoryService {
     } on DioException catch (e) {
       return {
         "success": false,
-        "message": e.response?.data['message'] ?? "Lỗi tạo danh mục"
+        "message": e.response?.data['message'] ?? e.message ?? "Lỗi tạo danh mục"
       };
     }
   }
 
   // 3. Cập nhật danh mục
-  Future<Map<String, dynamic>> updateCategory(String id, String name, int iconCodePoint, type) async {
+  Future<Map<String, dynamic>> updateCategory(String id, String name, int iconCodePoint, String type) async {
     try {
       final response = await _dio.put("categories/$id", data: {
         "name": name,
         "iconCodePoint": iconCodePoint,
         "type": type,
       });
-      return {"success": true, "message": response.data['message']};
+      return {"success": true, "message": response.data};
     } on DioException catch (e) {
       return {
         "success": false,
-        "message": e.response?.data['message'] ?? "Lỗi cập nhật"
+        "message": e.response?.data['message'] ?? e.message ?? "Lỗi cập nhật"
       };
     }
   }
@@ -62,11 +62,13 @@ class CategoryService {
   Future<Map<String, dynamic>> deleteCategory(String id) async {
     try {
       final response = await _dio.delete("categories/$id");
-      return {"success": true, "message": response.data['message']};
+      print(response.data);
+      return {"success": true, "message": response.data["message"]};
+
     } on DioException catch (e) {
       return {
         "success": false,
-        "message": e.response?.data['message'] ?? "Lỗi xóa danh mục"
+        "message": e.response?.data['message'] ?? e.message ?? "Lỗi xóa danh mục"
       };
     }
   }

@@ -33,7 +33,6 @@ const registerUser = async (req, res) => {
         const hashedPass = await bcrypt.hash(password, salt);
 
         const user_id = await userService.createUser( userName, hashedPass, email.toLowerCase());
-        //const user_id = "658123456789012345678901";
         const token = generateToken(user_id);
 
         res.status(201).json({
@@ -193,7 +192,6 @@ const resetPassword = async (req, res) => {
 // lấy profile
 const getProfile = async (req, res) => {
     const user_id = req.user.id || req.user_id;
-    //const user_id = "658123456789012345678901";
     try {
         const user = await userService.getUserById(user_id);
 

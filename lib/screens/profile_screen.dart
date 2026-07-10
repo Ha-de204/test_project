@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'reminder_list_screen.dart';
 import 'term_of_use_screen.dart';
 import 'privacy_policy_screen.dart';
+import 'manage_category_screen.dart';
 import '../constants.dart';
 import 'package:flutter/services.dart';
 import 'auth_screen.dart';
@@ -189,6 +190,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
       MaterialPageRoute(builder: (context) => const ReminderListScreen()),
     );
   }
+  // link đến giao diện Quản lý danh mục
+  void _navigateToManageCategories() {
+    if (!_isLoggedIn) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Vui lòng đăng nhập để quản lý danh mục."),
+        ),
+      );
+      return;
+    }
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const ManageCategoryScreen(),
+      ),
+    );
+  }
 
   // link đến gd điều khoản sd
   void _navigateToTermsOrPolicy(String type) {
@@ -264,6 +283,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final List<Map<String, dynamic>> items = [
       {'title': 'Chia sẻ', 'icon': Icons.share, 'action': _shareApp},
       {'title': 'Lời nhắc nhở', 'icon': Icons.timer, 'action': _navigateToReminders},
+      {'title': 'Quản lý danh mục', 'icon': Icons.category_outlined, 'action': _navigateToManageCategories,},
       {'title': 'Xóa tất cả dữ liệu', 'icon': Icons.delete_forever, 'action': _confirmDataDeletion},
       {'title': 'Điều khoản sử dụng', 'icon': Icons.description, 'action': () => _navigateToTermsOrPolicy('terms')},
       {'title': 'Chính sách bảo mật', 'icon': Icons.security, 'action': () => _navigateToTermsOrPolicy('policy')},

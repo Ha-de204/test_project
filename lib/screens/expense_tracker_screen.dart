@@ -48,21 +48,20 @@ class _ExpenseTrackerScreenState extends State<ExpenseTrackerScreen> {
   Map<String, double> _budgetsMap = {};
 
   final List<Map<String, dynamic>> categories = [
-    {'id': '658123456789012345678001', 'label': 'Mua sắm', 'icon': Icons.shopping_cart_outlined.codePoint, 'type': 'expense'},
-    {'id': '658123456789012345678002', 'label': 'Đồ ăn', 'icon': Icons.fastfood_outlined.codePoint, 'type': 'expense'},
-    {'id': '658123456789012345678003', 'label': 'Quần áo', 'icon': Icons.checkroom_outlined.codePoint, 'type': 'expense'},
-    {'id': '658123456789012345678004', 'label': 'Nhà ở', 'icon': Icons.home_outlined.codePoint, 'type': 'expense'},
-    {'id': '658123456789012345678005', 'label': 'Sức khỏe', 'icon': Icons.favorite_border.codePoint, 'type': 'expense'},
-    {'id': '658123456789012345678006', 'label': 'Học tập', 'icon': Icons.book_outlined.codePoint, 'type': 'expense'},
-    {'id': '658123456789012345678007', 'label': 'Du lịch', 'icon': Icons.flight_outlined.codePoint, 'type': 'expense'},
-    {'id': '658123456789012345678008', 'label': 'Giải trí', 'icon': Icons.videogame_asset_outlined.codePoint, 'type': 'expense'},
-    {'id': '658123456789012345678009', 'label': 'Sửa chữa', 'icon': Icons.build_outlined.codePoint, 'type': 'expense'},
-    {'id': '658123456789012345678010', 'label': 'Sắc đẹp', 'icon': Icons.spa_outlined.codePoint, 'type': 'expense'},
-    {'id': '658123456789012345678011', 'label': 'Điện thoại', 'icon': Icons.phone_android_outlined.codePoint, 'type': 'expense'},
-    {'label': 'Thêm danh mục', 'icon': Icons.add_circle_outline.codePoint, 'isSetting': true, 'type': 'expense'},
-    {'label': 'Lương', 'icon': Icons.payments_outlined.codePoint, 'type': 'income'},
-    {'label': 'Làm thêm', 'icon': Icons.work_outline.codePoint, 'type': 'income'},
-    {'label': 'Tiền thưởng', 'icon': Icons.card_giftcard.codePoint, 'type': 'income'},
+    {'id': '658123456789012345678001', 'label': 'Mua sắm', 'icon': Icons.shopping_cart_outlined.codePoint, 'type': 'expense', 'isDefault': true, 'canEdit': false, 'canDelete': false},
+    {'id': '658123456789012345678002', 'label': 'Đồ ăn', 'icon': Icons.fastfood_outlined.codePoint, 'type': 'expense', 'isDefault': true, 'canEdit': false, 'canDelete': false},
+    {'id': '658123456789012345678003', 'label': 'Quần áo', 'icon': Icons.checkroom_outlined.codePoint, 'type': 'expense', 'isDefault': true, 'canEdit': false, 'canDelete': false},
+    {'id': '658123456789012345678004', 'label': 'Nhà ở', 'icon': Icons.home_outlined.codePoint, 'type': 'expense', 'isDefault': true, 'canEdit': false, 'canDelete': false},
+    {'id': '658123456789012345678005', 'label': 'Sức khỏe', 'icon': Icons.favorite_border.codePoint, 'type': 'expense', 'isDefault': true, 'canEdit': false, 'canDelete': false},
+    {'id': '658123456789012345678006', 'label': 'Học tập', 'icon': Icons.book_outlined.codePoint, 'type': 'expense', 'isDefault': true, 'canEdit': false, 'canDelete': false},
+    {'id': '658123456789012345678007', 'label': 'Du lịch', 'icon': Icons.flight_outlined.codePoint, 'type': 'expense', 'isDefault': true, 'canEdit': false, 'canDelete': false},
+    {'id': '658123456789012345678008', 'label': 'Giải trí', 'icon': Icons.videogame_asset_outlined.codePoint, 'type': 'expense', 'isDefault': true, 'canEdit': false, 'canDelete': false},
+    {'id': '658123456789012345678009', 'label': 'Sửa chữa', 'icon': Icons.build_outlined.codePoint, 'type': 'expense', 'isDefault': true, 'canEdit': false, 'canDelete': false},
+    {'id': '658123456789012345678010', 'label': 'Sắc đẹp', 'icon': Icons.spa_outlined.codePoint, 'type': 'expense', 'isDefault': true, 'canEdit': false, 'canDelete': false},
+    {'id': '658123456789012345678011', 'label': 'Điện thoại', 'icon': Icons.phone_android_outlined.codePoint, 'type': 'expense', 'isDefault': true, 'canEdit': false, 'canDelete': false},
+    {'label': 'Lương', 'icon': Icons.payments_outlined.codePoint, 'type': 'income', 'isDefault': true, 'canEdit': false, 'canDelete': false},
+    {'label': 'Làm thêm', 'icon': Icons.work_outline.codePoint, 'type': 'income', 'isDefault': true, 'canEdit': false, 'canDelete': false},
+    {'label': 'Tiền thưởng', 'icon': Icons.card_giftcard.codePoint, 'type': 'income', 'isDefault': true, 'canEdit': false, 'canDelete': false},
   ];
 
   @override
@@ -151,6 +150,16 @@ class _ExpenseTrackerScreenState extends State<ExpenseTrackerScreen> {
       debugPrint("LỖI TẢI DỮ LIỆU: $e");
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  Future<void> _reloadCategories() async {
+    final categories = await _categoryService.getCategories();
+
+    if (!mounted) return;
+
+    setState(() {
+      _apiCategories = categories;
+    });
   }
 
   Future<void> _initializeDefaultCategoriesOnServer() async {
@@ -531,6 +540,8 @@ class _ExpenseTrackerScreenState extends State<ExpenseTrackerScreen> {
   void _showAddTransactionSheet({
     Map<String, dynamic>? highlightCategory,
   }) async {
+    await _reloadCategories();
+
     final List<Map<String, dynamic>> mapping = _apiCategories.map<Map<String, dynamic>>((c) => {
       'id': c.id,
       'label': c.name,
@@ -538,13 +549,6 @@ class _ExpenseTrackerScreenState extends State<ExpenseTrackerScreen> {
       'type': c.type,
       'isSetting': false,
     }).toList();
-
-    mapping.add({
-      'id': 'SETTING',
-      'label': 'Thêm danh mục',
-      'icon': Icons.add_circle_outline.codePoint,
-      'isSetting': true,
-    });
 
     final result = await showModalBottomSheet<dynamic>(
       context: context,
@@ -566,7 +570,7 @@ class _ExpenseTrackerScreenState extends State<ExpenseTrackerScreen> {
 
     if (result is Map &&
         result["refresh"] == true) {
-      await _fetchData();
+      await _reloadCategories();
 
       _showAddTransactionSheet(highlightCategory: result["category"],
       );
@@ -643,12 +647,6 @@ class _ExpenseTrackerScreenState extends State<ExpenseTrackerScreen> {
       'type': c.type,
       'isSetting': false,
     }).toList();
-
-    mapping.add({
-      'label': 'Thêm danh mục',
-      'icon': Icons.add_circle_outline.codePoint,
-      'isSetting': true,
-    });
 
     final result = await showModalBottomSheet<dynamic>(
       context: context,
