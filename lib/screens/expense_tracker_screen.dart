@@ -18,6 +18,8 @@ import 'reports_screen.dart';
 import 'profile_screen.dart';
 import 'scan_camera_screen.dart';
 import '../widgets/add_transaction_content.dart';
+import '../screens/manage_category_screen.dart';
+import '../screens/reminder_list_screen.dart';
 
 class ExpenseTrackerScreen extends StatefulWidget {
 
@@ -298,67 +300,103 @@ class _ExpenseTrackerScreenState extends State<ExpenseTrackerScreen> {
     });
   }
 
-  void _showMainMenu() {
-    showModalBottomSheet(
+  void _showMainMenu() async {
+    final RenderBox overlay =
+    Overlay.of(context).context.findRenderObject() as RenderBox;
+
+    final result = await showMenu<String>(
       context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      position: RelativeRect.fromLTRB(
+        15, // cách lề trái
+        kToolbarHeight + 25, // ngay dưới AppBar
+        overlay.size.width,
+        0,
       ),
-      builder: (context) {
-        return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
+      items: const [
+        PopupMenuItem<String>(
+          value: "category",
+          child: Row(
             children: [
-
-              ListTile(
-                leading: const Icon(Icons.add),
-                title: const Text("Thêm giao dịch"),
-                onTap: () {
-                  Navigator.pop(context);
-                  _showAddTransactionSheet();
-                },
-              ),
-
-              ListTile(
-                leading: const Icon(Icons.document_scanner),
-                title: const Text("Scan hóa đơn"),
-                  onTap: () async {
-                    Navigator.pop(context);
-
-                    final result = await Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const ScanCameraScreen(),
-                      ),
-                    );
-
-                    if (result != null && result is Map<String, dynamic>) {
-                      final txDate = DateTime.parse(result['date']);
-
-                      setState(() {
-                        _selectedMonthYear = DateTime(
-                          txDate.year,
-                          txDate.month,
-                        );
-
-                        _highlightTransactionId = result['_id'].toString();
-                      });
-
-                      await _fetchData();
-
-                      WidgetsBinding.instance.addPostFrameCallback((_) {
-                        _scrollToHighlight();
-                      });
-                    } else {
-                      await _fetchData();
-                    }
-                  }
-              ),
+              Icon(Icons.category_outlined),
+              SizedBox(width: 10),
+              Text("Quản lý danh mục"),
             ],
           ),
-        );
-      },
+        ),
+        PopupMenuItem<String>(
+          value: "reminder",
+          child: Row(
+            children: [Icon(Icons.notifications_active_outlined),
+              SizedBox(width: 10),
+              Text("Đặt lời nhắc"),
+            ],
+          ),
+        ),
+        PopupMenuItem<String>(
+          value: "scan",
+          child: Row(
+            children: [
+              Icon(Icons.document_scanner),
+              SizedBox(width: 10),
+              Text("Scan hóa đơn"),
+            ],
+          ),
+        ),
+      ],
     );
+
+    if (result == "category") {
+      final refresh = await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const ManageCategoryScreen(),
+        ),
+      );
+
+      // Khi quay về thì tải lại danh mục
+      if (refresh == true) {
+        await _fetchData();
+      }
+    }
+
+    if (result == "reminder") {
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const ReminderListScreen(),
+        ),
+      );
+    }
+
+    if (result == "scan") {
+      final scanResult = await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const ScanCameraScreen(),
+        ),
+      );
+
+      if (scanResult != null && scanResult is Map<String, dynamic>) {
+        final txDate = DateTime.parse(scanResult['date']);
+
+        setState(() {
+          _selectedMonthYear = DateTime(
+            txDate.year,
+            txDate.month,
+          );
+
+          _highlightTransactionId = scanResult['_id'].toString();
+        });
+
+        await _fetchData();
+
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _scrollToHighlight();
+        });
+      } else {
+        await _fetchData();
+      }
+    }
   }
 
   // hien menu chon danh muc
@@ -1082,7 +1120,10 @@ class _ExpenseTrackerScreenState extends State<ExpenseTrackerScreen> {
           : currentBody,
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       floatingActionButton: FloatingActionButton(
-        onPressed: _showAddTransactionSheet,
+        onPressed: () async {
+          await _fetchData();          // luôn lấy category mới nhất
+          _showAddTransactionSheet();
+        },
         backgroundColor: kPrimaryPink,
         shape: const CircleBorder(),
         elevation: 4.0,

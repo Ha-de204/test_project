@@ -89,64 +89,119 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   // chia sẻ ứng dụng
-  void _shareApp(){
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-          title: const Text('Chia sẻ ứng dụng', style: TextStyle(fontWeight: FontWeight.bold)),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('Sao chép đường dẫn sau để chia sẻ ứng dụng: ', style: TextStyle(fontSize: 15)),
-              const SizedBox(height: 10),
-              Row(
-                children: [
-                  const Expanded(
-                    child: SelectableText(
-                      _APP_LINK,
-                      style: TextStyle(color: kPrimaryPink, fontWeight: FontWeight.w500),
+  void _shareApp() {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(15),
+        ),
+        title: const Row(
+          children: [
+            Icon(Icons.share, color: kPrimaryPink),
+            SizedBox(width: 8),
+            Text(
+              'Chia sẻ ứng dụng',
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Sao chép đường dẫn dưới đây để chia sẻ ứng dụng:',
+              style: TextStyle(fontSize: 15),
+            ),
+
+            const SizedBox(height: 12),
+
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: Colors.grey.shade300),
+              ),
+              child: const SelectableText(
+                _APP_LINK,
+                style: TextStyle(
+                  color: kPrimaryPink,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 20),
+
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    icon: const Icon(Icons.copy),
+                    label: const Text("Sao chép"),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: kPrimaryPink,
+                      side: const BorderSide(color: kPrimaryPink),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  InkWell(
-                    onTap: () async {
-                      await Clipboard.setData(const ClipboardData(text: _APP_LINK));
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
+                    onPressed: () async {
+                      await Clipboard.setData(
+                        const ClipboardData(text: _APP_LINK),
+                      );
+
+                      if (dialogContext.mounted) {
+                        ScaffoldMessenger.of(dialogContext).showSnackBar(
                           const SnackBar(
-                            content: Text('Đã sao chép liên kết!', style: TextStyle(color: Colors.white)),
+                            content: Text(
+                              'Đã sao chép liên kết!',
+                              style: TextStyle(color: Colors.white),
+                            ),
                             backgroundColor: Colors.green,
                             duration: Duration(seconds: 2),
                           ),
                         );
                       }
                     },
-                    borderRadius: BorderRadius.circular(8),
-                    child: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: kLightPinkBackground,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: kPrimaryPink),
+                  ),
+                ),
+
+                const SizedBox(width: 12),
+
+                Expanded(
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: kPrimaryPink,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
                       ),
-                      child: const Icon(Icons.copy, size: 20, color: kPrimaryPink),
+                    ),
+                    onPressed: () => Navigator.pop(dialogContext),
+                    child: const Text(
+                      "Đóng",
+                      style: TextStyle(fontWeight: FontWeight.bold),
                     ),
                   ),
-                ],
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Đóng', style: TextStyle(color: kPrimaryPink)),
+                ),
+              ],
             ),
           ],
         ),
-      );
+      ),
+    );
   }
+
   // xóa tất cả dl
   void _confirmDataDeletion() {
     showDialog(
@@ -169,7 +224,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           ElevatedButton(
             onPressed: () {
-              debugPrint('DATA DELETED!');
               Navigator.pop(context);
             },
             style: ElevatedButton.styleFrom(

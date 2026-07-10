@@ -32,7 +32,7 @@ class CategoryService {
         "iconCodePoint": iconCodePoint,
         "type": type,
       });
-      return {"success": true, "data": response.data};
+      return {"success": true, "data": response.data["message"]};
     } on DioException catch (e) {
       return {
         "success": false,
@@ -49,7 +49,7 @@ class CategoryService {
         "iconCodePoint": iconCodePoint,
         "type": type,
       });
-      return {"success": true, "message": response.data};
+      return {"success": true, "message": response.data["message"]};
     } on DioException catch (e) {
       return {
         "success": false,

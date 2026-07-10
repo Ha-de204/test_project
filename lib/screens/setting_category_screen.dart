@@ -143,7 +143,7 @@ class _SettingCategoryScreenState extends State<SettingCategoryScreen> {
       ),
     );
 
-    if (result["success"] == true) {
+    if (result ["success"] == true) {
       Navigator.pop(context, true);
     }
   }
